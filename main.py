@@ -7,10 +7,10 @@ import soundfile as sf
 import numpy as np
 import uuid
 
-app = FastAPI()
+app = FastAPI(title="Auvia Audio Engine - V1 Core")
 
 # Directory for processing
-UPLOAD_DIR = "processed_cache"
+UPLOAD_DIR = "/tmp/processed_cache"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def apply_neural_timber_correction(audio_path: str, output_path: str):
@@ -35,28 +35,23 @@ def apply_neural_timber_correction(audio_path: str, output_path: str):
 
 @app.post("/process-vocal/")
 async def process_vocal(file: UploadFile = File(...)):
-    # Validate file type
-    if not file.filename.endswith(('.wav', '.mp3', '.flac')):
-        raise HTTPException(status_code=400, detail="Invalid audio format.")
-    
-    file_id = str(uuid.uuid4())
-    input_path = f"{UPLOAD_DIR}/in_{file_id}_{file.filename}"
-    output_path = f"{UPLOAD_DIR}/out_{file_id}_{file.filename}"
-
-    # Save incoming file
-    with open(input_path, "wb") as buffer:
-        buffer.write(await file.read())
-
     try:
-        # Run the Auvia Engine
+        file_id = str(uuid.uuid4())
+        input_path = f"{UPLOAD_DIR}/in_{file_id}_{file.filename}"
+        output_path = f"{UPLOAD_DIR}/out_{file_id}_{file.filename}"
+
+        with open(input_path, "wb") as buffer:
+            buffer.write(await file.read())
+
+        # Logic Execution
         apply_neural_timber_correction(input_path, output_path)
-        return FileResponse(path=output_path, filename=f"auvia_enhanced_{file.filename}")
+        
+        return FileResponse(path=output_path, filename=f"auvia_{file.filename}")
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        # Optional: Cleanup input file to save space
-        if os.path.exists(input_path):
-            os.remove(input_path)
+        # This sends the ACTUAL error to your screen
+        raise HTTPException(status_code=500, detail=f"Engine Crash: {str(e)}")
+    
 
 if __name__ == "__main__":
     import uvicorn
