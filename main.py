@@ -1,58 +1,70 @@
-
 import os
+import uuid
+import asyncio
+import logging
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 import librosa
 import soundfile as sf
 import numpy as np
-import uuid
+
+# Setup logging for the 'Chairman' level visibility
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("auvia_engine")
 
 app = FastAPI(title="Auvia Audio Engine - V1 Core")
 
-# Directory for processing
+# Use /tmp for cloud environments like Render
 UPLOAD_DIR = "/tmp/processed_cache"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def apply_neural_timber_correction(audio_path: str, output_path: str):
+def apply_neural_timbre_correction(audio_path: str, output_path: str):
     """
-    This is where your proprietary logic lives.
-    For the MVP, we use Librosa to extract features and 
-    'warm up' the vocal timber algorithmically.
+    Core Logic: Spectral Shaping & Timbre Enhancement.
+    Note: 'timbre' is the correct musical term.
     """
-    # 1. Load the audio
     y, sr = librosa.load(audio_path, sr=None)
     
-    # 2. Extract Spectral Centroid (The 'Soul' of the vocal)
-    # This is a placeholder for your PyTorch/RVC model
-    # We are applying a harmonic-percussive separation to enhance clarity
-    y_harmonic, y_percussive = librosa.effects.hpss(y)
+    # Harmonic/Percussive separation
+    y_harm = librosa.effects.harmonic(y, margin=3.0)
     
-    # 3. Apply a subtle gain to harmonics to reduce 'robotics'
-    y_final = y_harmonic * 1.2 + y_percussive * 0.8
+    # Spectral Shaping via STFT
+    S = librosa.stft(y_harm)
+    S_mag, S_phase = librosa.magphase(S)
     
-    # 4. Save processed file
-    sf.write(output_path, y_final, sr)
+    # Boost low-mid resonance for vocal warmth (150Hz - 500Hz)
+    S_mag[0:20, :] *= 1.5 
+    
+    y_enhanced = librosa.istft(S_mag * S_phase)
+    sf.write(output_path, y_enhanced, sr)
 
 @app.post("/process-vocal/")
 async def process_vocal(file: UploadFile = File(...)):
+    # 1. Sanitize Filename (Security Fix)
+    safe_filename = f"{uuid.uuid4()}.wav" 
+    input_path = os.path.join(UPLOAD_DIR, f"in_{safe_filename}")
+    output_path = os.path.join(UPLOAD_DIR, f"out_{safe_filename}")
+
     try:
-        file_id = str(uuid.uuid4())
-        input_path = f"{UPLOAD_DIR}/in_{file_id}_{file.filename}"
-        output_path = f"{UPLOAD_DIR}/out_{file_id}_{file.filename}"
+        # 2. Async Write
+        content = await file.read()
+        with open(input_path, "wb") as f:
+            f.write(content)
 
-        with open(input_path, "wb") as buffer:
-            buffer.write(await file.read())
-
-        # Logic Execution
-        apply_neural_timber_correction(input_path, output_path)
+        # 3. Offload Sync Work to Thread (Performance Fix)
+        # This prevents the server from 'freezing' during processing
+        await asyncio.to_thread(apply_neural_timbre_correction, input_path, output_path)
         
-        return FileResponse(path=output_path, filename=f"auvia_{file.filename}")
+        return FileResponse(path=output_path, filename=f"auvia_enhanced.wav")
     
     except Exception as e:
-        # This sends the ACTUAL error to your screen
-        raise HTTPException(status_code=500, detail=f"Engine Crash: {str(e)}")
+        logger.error(f"Processing Error: {e}")
+        # 4. Obfuscate Internal Errors (Security Fix)
+        raise HTTPException(status_code=500, detail="Internal Audio Processing Error.")
     
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    finally:
+        # 5. Auto-Cleanup (Ops Fix)
+        if os.path.exists(input_path):
+            os.remove(input_path)
+        # Note: We keep the output file for the FileResponse, 
+        # but in production, a background task would clear this after 1 hour.
