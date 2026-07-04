@@ -25,6 +25,8 @@ chroma_db/
 *.flac
 *.ogg
 temp_audio/
+processed_cache/
+Untitled
 
 # macOS
 .DS_Store
@@ -40,6 +42,4 @@ temp_audio/
 # Jupyter
 .ipynb_checkpoints/google-cloud-sdk/
 google-cloud-sdk/
-echo "temp_input.wav" >> .gitignore
-echo "*.wav" >> .gitignoretemp_input.wav
-*.wav
+
