@@ -171,4 +171,4 @@ auvia-engine/
 **Priyal Rathore** — AI Engineer & Founder, Auvia  
 Trained vocalist building AI tools for musicians who can't afford a studio.
 
-[LinkedIn](https://www.linkedin.com/in/priyalrathore17) · [Demo](https://auviaengine.com) 
+[LinkedIn](https://www.linkedin.com/in/priyalrathore17) · auviaengine.com
