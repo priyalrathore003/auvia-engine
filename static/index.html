@@ -629,6 +629,60 @@
   #orchestrate-output-section { display: none; }
 
   #orchestrate-output-section.visible { display: block; }
+
+  /* ── Voice Agent ── */
+  #va-controls button {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-dim);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #va-controls button:hover:not(:disabled) { background: #2D1B6945; }
+
+  #va-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #va-stop-btn { border-color: var(--error); }
+
+  #va-status {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  #va-status.live { color: var(--success); }
+
+  #va-audio-player {
+    width: 100%;
+    height: 40px;
+    margin: 12px 0;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  #va-latency-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  #va-latency-table th, #va-latency-table td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #va-latency-table th { color: var(--muted); font-weight: 500; }
+
+  #va-latency-table td.total { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -654,6 +708,7 @@
   <div class="top-tabs">
     <button class="top-tab-btn active" id="tab-enhance" onclick="setTab('enhance')">Enhance Audio</button>
     <button class="top-tab-btn" id="tab-orchestrate" onclick="setTab('orchestrate')">Sing &amp; Orchestrate</button>
+    <button class="top-tab-btn" id="tab-voice-agent" onclick="setTab('voice-agent')">Voice Agent</button>
   </div>
 
   <div id="enhance-flow">
@@ -829,6 +884,42 @@
     </div>
 
   </div><!-- /orchestrate-flow -->
+
+  <div id="voice-agent-flow" style="display:none">
+
+    <!-- Session -->
+    <div class="card">
+      <div class="card-label">Real-Time Voice Agent</div>
+      <p class="mode-desc" style="margin-top:0">
+        Cascaded pipeline: local VAD detects when you stop talking → Sarvam STT →
+        LLM reply → ElevenLabs TTS. Every turn's latency is measured and shown below.
+      </p>
+      <div id="va-controls" style="display:flex; gap:10px; margin-top:16px">
+        <button id="va-start-btn" onclick="startVoiceSession()">Start Conversation</button>
+        <button id="va-stop-btn" onclick="stopVoiceSession()" disabled>End Conversation</button>
+      </div>
+      <div id="va-status">Not connected</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="va-error-box"></div>
+
+    <!-- Live turn -->
+    <div class="card" id="va-turn-card" style="display:none">
+      <div class="card-label">Latest Turn</div>
+      <div class="result-text" id="va-transcript"></div>
+      <div class="result-text" id="va-reply"></div>
+      <audio id="va-audio-player" controls></audio>
+
+      <table id="va-latency-table">
+        <thead>
+          <tr><th>Stage</th><th>ms</th></tr>
+        </thead>
+        <tbody id="va-latency-body"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /voice-agent-flow -->
 
   <footer>
     Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a> &nbsp;·&nbsp;
@@ -1062,8 +1153,11 @@
   function setTab(tab) {
     document.getElementById('tab-enhance').classList.toggle('active', tab === 'enhance');
     document.getElementById('tab-orchestrate').classList.toggle('active', tab === 'orchestrate');
+    document.getElementById('tab-voice-agent').classList.toggle('active', tab === 'voice-agent');
     document.getElementById('enhance-flow').style.display = tab === 'enhance' ? '' : 'none';
     document.getElementById('orchestrate-flow').style.display = tab === 'orchestrate' ? '' : 'none';
+    document.getElementById('voice-agent-flow').style.display = tab === 'voice-agent' ? '' : 'none';
+    if (tab !== 'voice-agent') stopVoiceSession();
   }
 
   // ── Sing & Orchestrate: recording ─────────────────────────────────────────
@@ -1302,6 +1396,132 @@
 
   function hideOrchestrateError() {
     document.getElementById('orchestrate-error-box').classList.remove('visible');
+  }
+
+  // ── Voice Agent: real-time conversation ───────────────────────────────────
+  let vaWs           = null;
+  let vaAudioCtx      = null;
+  let vaMediaStream   = null;
+  let vaProcessorNode = null;
+
+  const vaStartBtn = document.getElementById('va-start-btn');
+  const vaStopBtn  = document.getElementById('va-stop-btn');
+  const vaStatusEl = document.getElementById('va-status');
+
+  function vaSetStatus(text, live) {
+    vaStatusEl.textContent = text;
+    vaStatusEl.classList.toggle('live', !!live);
+  }
+
+  function showVaError(msg) {
+    const el = document.getElementById('va-error-box');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideVaError() {
+    document.getElementById('va-error-box').classList.remove('visible');
+  }
+
+  async function startVoiceSession() {
+    if (vaWs) return;
+    hideVaError();
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      showVaError('Microphone access denied or unavailable: ' + err.message);
+      return;
+    }
+    vaMediaStream = stream;
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = API_BASE.replace(/^https?:/, wsProtocol);
+    vaWs = new WebSocket(wsBase + '/ws/voice-agent');
+    vaWs.binaryType = 'arraybuffer';
+
+    vaWs.onopen = () => {
+      vaSetStatus('Connected — listening…', true);
+      vaStartBtn.disabled = true;
+      vaStopBtn.disabled = false;
+
+      vaAudioCtx = new AudioContext({ sampleRate: 16000 });
+      const source = vaAudioCtx.createMediaStreamSource(stream);
+      vaProcessorNode = vaAudioCtx.createScriptProcessor(4096, 1, 1);
+
+      vaProcessorNode.onaudioprocess = e => {
+        if (!vaWs || vaWs.readyState !== WebSocket.OPEN) return;
+        const float32 = e.inputBuffer.getChannelData(0);
+        const int16 = new Int16Array(float32.length);
+        for (let i = 0; i < float32.length; i++) {
+          const s = Math.max(-1, Math.min(1, float32[i]));
+          int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        vaWs.send(int16.buffer);
+      };
+
+      source.connect(vaProcessorNode);
+      vaProcessorNode.connect(vaAudioCtx.destination);
+    };
+
+    vaWs.onmessage = event => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'error') {
+        showVaError(data.message);
+        return;
+      }
+      if (data.type === 'turn') showVaTurn(data);
+    };
+
+    vaWs.onerror = () => showVaError('Voice agent connection error.');
+
+    vaWs.onclose = () => {
+      vaSetStatus('Not connected');
+      vaWs = null;
+      vaStartBtn.disabled = false;
+      vaStopBtn.disabled = true;
+    };
+  }
+
+  function stopVoiceSession() {
+    if (vaProcessorNode) { vaProcessorNode.disconnect(); vaProcessorNode = null; }
+    if (vaAudioCtx) { vaAudioCtx.close(); vaAudioCtx = null; }
+    if (vaMediaStream) { vaMediaStream.getTracks().forEach(t => t.stop()); vaMediaStream = null; }
+    if (vaWs) { vaWs.close(); vaWs = null; }
+    vaStartBtn.disabled = false;
+    vaStopBtn.disabled = true;
+    vaSetStatus('Not connected');
+  }
+
+  function showVaTurn(data) {
+    document.getElementById('va-turn-card').style.display = '';
+    vaSetStatus('Listening…', true);
+
+    const transcriptEl = document.getElementById('va-transcript');
+    transcriptEl.textContent = data.transcript ? '"' + data.transcript + '"' : (data.note || '');
+
+    const replyEl = document.getElementById('va-reply');
+    replyEl.textContent = data.reply_text || '';
+    replyEl.style.display = data.reply_text ? '' : 'none';
+
+    const player = document.getElementById('va-audio-player');
+    if (data.audio_b64) {
+      const blob = b64ToBlob(data.audio_b64, 'audio/mpeg');
+      player.src = URL.createObjectURL(blob);
+      player.play().catch(() => {});
+    }
+
+    const body = document.getElementById('va-latency-body');
+    body.innerHTML = '';
+    const latency = data.latency_ms || {};
+    for (const [stage, ms] of Object.entries(latency)) {
+      if (stage === 'total_ms') continue;
+      body.innerHTML += `<tr><td>${stage}</td><td>${ms}</td></tr>`;
+    }
+    if ('total_ms' in latency) {
+      body.innerHTML += `<tr><td class="total">total</td><td class="total">${latency.total_ms}</td></tr>`;
+    }
   }
 </script>
 </body>

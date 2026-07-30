@@ -140,7 +140,7 @@ text, no quotes, no markdown.
 """.strip()
 
         response = llm.invoke(prompt)
-        music_prompt = response.content.strip().strip('"')
+        music_prompt = response.text.strip().strip('"')
         if not music_prompt:
             music_prompt = fallback_prompt
 
@@ -240,7 +240,7 @@ Transcript (if any): {(state.get('transcript') or '')[:200]}
 Give a concise, friendly 2-3 sentence response.
 """.strip()
         response = llm.invoke(prompt)
-        agent_response = response.content
+        agent_response = response.text
     except Exception as e:
         logger.error(f"[SYNTHESIS] LLM failed: {e}")
         agent_response = summary

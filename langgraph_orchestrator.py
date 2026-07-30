@@ -40,14 +40,14 @@ def get_llm():
     if provider == "groq":
         from langchain_groq import ChatGroq
         return ChatGroq(
-            model="llama3-8b-8192",
+            model="openai/gpt-oss-20b",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0
         )
     elif provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-3.6-flash",
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0
         )
@@ -109,8 +109,8 @@ def diagnostic_node(state: AudioState) -> dict:
     # RAG retrieval
     rag_context = ""
     try:
-        from rag_storage import query_audio_transcripts
-        rag_context = query_audio_transcripts(state["user_query"])
+        from rag_storage import search_transcripts
+        rag_context = search_transcripts(state["user_query"])
         logger.info(f"[DIAGNOSTIC] RAG context retrieved: {len(rag_context)} chars")
     except Exception as e:
         logger.warning(f"[DIAGNOSTIC] RAG unavailable: {e}")
@@ -134,7 +134,7 @@ Respond ONLY as valid JSON (no markdown):
 """.strip()
 
         response = llm.invoke(prompt)
-        raw      = response.content.strip().strip("```json").strip("```").strip()
+        raw      = response.text.strip().strip("```json").strip("```").strip()
         parsed   = json.loads(raw)
         requires_dsp = bool(parsed.get("requires_dsp", requires_dsp))
         reasoning    = parsed.get("reasoning", reasoning)
@@ -167,10 +167,11 @@ def execution_node(state: AudioState) -> dict:
         with open(state["audio_file_path"], "rb") as f:
             audio_bytes = f.read()
 
-        enhanced_bytes = apply_timbre_enhancement(audio_bytes)
+        ext = os.path.splitext(state["audio_file_path"])[1].lstrip(".") or "wav"
+        enhanced_bytes = apply_timbre_enhancement(audio_bytes, ext)
 
-        # Write enhanced audio to temp path
-        enhanced_path = state["audio_file_path"].replace(".wav", "_enhanced.wav")
+        base, _ = os.path.splitext(state["audio_file_path"])
+        enhanced_path = f"{base}_enhanced.wav"
         with open(enhanced_path, "wb") as f:
             f.write(enhanced_bytes)
 
@@ -221,7 +222,7 @@ Give a concise, helpful response. Be specific about what was done and why.
 """.strip()
 
         response = llm.invoke(prompt)
-        agent_response = response.content
+        agent_response = response.text
 
     except Exception as e:
         logger.error(f"[SYNTHESIS] LLM failed: {e}")
@@ -270,5 +271,4 @@ def build_graph():
     return g.compile()
 
 
-# Singleton — reused across all requests
-audio_graph = build_graph()
+# Graph is compiled lazily via main.get_audio_graph()

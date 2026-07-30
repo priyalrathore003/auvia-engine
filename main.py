@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -281,6 +281,14 @@ async def orchestrate(
         raise HTTPException(status_code=500, detail=str(e)) from e
     finally:
         cleanup(vocal_path)
+
+
+@app.websocket("/ws/voice-agent")
+async def voice_agent_ws(websocket: WebSocket):
+    """Real-time voice conversation: mic PCM16 in, VAD-driven turn-taking,
+    Sarvam STT → LLM → ElevenLabs TTS, spoken reply + latency breakdown out."""
+    from voice_agent_ws import handle_voice_session
+    await handle_voice_session(websocket)
 
 
 @app.get("/")
