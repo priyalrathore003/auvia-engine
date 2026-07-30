@@ -22,6 +22,8 @@ ENV SENTENCE_TRANSFORMERS_HOME=/tmp/huggingface
 RUN mkdir -p /tmp/huggingface && python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || echo "WARN: HF model pre-download failed (will lazy-load at runtime)"
 
 COPY main.py dsp_pipeline.py langgraph_orchestrator.py rag_storage.py ./
+COPY orchestration_pipeline.py orchestration_graph.py ./
+COPY integrations/ integrations/
 COPY static/ static/
 
 # Cloud Run writable temp + model cache

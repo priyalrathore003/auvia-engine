@@ -254,6 +254,23 @@
 
   textarea#query:focus { border-color: var(--accent); }
 
+  #mood-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #mood-input::placeholder { color: var(--muted); }
+
+  #mood-input:focus { border-color: var(--accent); }
+
   /* ── Mode toggle ── */
   .mode-toggle {
     display: flex;
@@ -321,6 +338,37 @@
   }
 
   #process-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  #orchestrate-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 0 32px var(--accent-glow);
+  }
+
+  #orchestrate-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 0 48px var(--accent-glow);
+  }
+
+  #orchestrate-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
@@ -467,6 +515,120 @@
     background: var(--border);
     margin: 20px 0;
   }
+
+  /* ── Top-level mode tabs ── */
+  .top-tabs {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 0 24px 20px;
+  }
+
+  .top-tab-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .top-tab-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+
+  /* ── Record zone ── */
+  #record-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0 4px;
+  }
+
+  #record-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    border: 1.5px solid var(--error);
+    background: var(--accent-dim);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #record-btn:hover { background: #EF444415; }
+
+  #record-btn.recording { border-color: var(--error); background: #EF444420; }
+
+  #record-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--error);
+    display: inline-block;
+  }
+
+  #record-btn.recording #record-dot {
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  #record-timer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .record-timer-max { opacity: 0.6; }
+
+  #level-canvas {
+    width: 100%;
+    height: 40px;
+    display: none;
+    border-radius: 6px;
+  }
+
+  #level-canvas.visible { display: block; }
+
+  #vocal-preview {
+    width: 100%;
+    height: 40px;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  .download-btn-secondary {
+    margin-top: 10px;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .download-btn-secondary:hover { background: var(--accent-dim); }
+
+  #orchestrate-output-section { display: none; }
+
+  #orchestrate-output-section.visible { display: block; }
 </style>
 </head>
 <body>
@@ -487,6 +649,14 @@
     </div>
     <p class="tagline">AI Audio Intelligence · LangGraph · RAG · DSP</p>
   </header>
+
+  <!-- Top-level mode tabs -->
+  <div class="top-tabs">
+    <button class="top-tab-btn active" id="tab-enhance" onclick="setTab('enhance')">Enhance Audio</button>
+    <button class="top-tab-btn" id="tab-orchestrate" onclick="setTab('orchestrate')">Sing &amp; Orchestrate</button>
+  </div>
+
+  <div id="enhance-flow">
 
   <!-- Upload -->
   <div class="card">
@@ -591,6 +761,74 @@
       </button>
     </div>
   </div>
+
+  </div><!-- /enhance-flow -->
+
+  <div id="orchestrate-flow" style="display:none">
+
+    <!-- Record -->
+    <div class="card">
+      <div class="card-label">01 · Record Your Vocals</div>
+      <div id="record-zone">
+        <button id="record-btn" onclick="toggleRecording()">
+          <span id="record-dot"></span>
+          <span id="record-label">Start Recording</span>
+        </button>
+        <div id="record-timer">0:00 <span class="record-timer-max">/ 1:00</span></div>
+        <canvas id="level-canvas"></canvas>
+        <audio id="vocal-preview" controls style="display:none"></audio>
+      </div>
+    </div>
+
+    <!-- Mood -->
+    <div class="card">
+      <div class="card-label">02 · Mood / Genre (optional)</div>
+      <div class="query-wrap">
+        <input type="text" id="mood-input" placeholder="e.g. warm acoustic ballad, upbeat pop, lo-fi hip-hop... leave blank to let Auvia decide">
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="orchestrate-error-box"></div>
+
+    <!-- Generate -->
+    <button id="orchestrate-btn" onclick="generateOrchestration()" disabled>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <polygon points="6,3 15,9 6,15" fill="white"/>
+      </svg>
+      Generate Orchestration
+    </button>
+
+    <!-- Output -->
+    <div id="orchestrate-output-section">
+      <div style="height: 20px"></div>
+      <div class="card output-card">
+        <div class="card-label">Output</div>
+
+        <div class="result-meta" id="orchestrate-result-meta"></div>
+        <div class="result-text" id="orchestrate-transcript" style="display:none"></div>
+        <div class="result-text" id="orchestrate-result-text"></div>
+
+        <audio id="orchestrate-output-player" controls></audio>
+
+        <button class="download-btn" id="download-mix-btn" onclick="downloadOrchestrated()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Download Mix
+        </button>
+        <button class="download-btn download-btn-secondary" id="download-instrumental-btn" onclick="downloadInstrumental()" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Download Instrumental Only
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /orchestrate-flow -->
 
   <footer>
     Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a> &nbsp;·&nbsp;
@@ -818,6 +1056,252 @@
 
   function hideError() {
     document.getElementById('error-box').classList.remove('visible');
+  }
+
+  // ── Top-level tabs ─────────────────────────────────────────────────────────
+  function setTab(tab) {
+    document.getElementById('tab-enhance').classList.toggle('active', tab === 'enhance');
+    document.getElementById('tab-orchestrate').classList.toggle('active', tab === 'orchestrate');
+    document.getElementById('enhance-flow').style.display = tab === 'enhance' ? '' : 'none';
+    document.getElementById('orchestrate-flow').style.display = tab === 'orchestrate' ? '' : 'none';
+  }
+
+  // ── Sing & Orchestrate: recording ─────────────────────────────────────────
+  const MAX_RECORD_SECONDS = 60;
+
+  let mediaRecorder   = null;
+  let mediaStream     = null;
+  let recordedChunks  = [];
+  let recordedBlob    = null;
+  let recordTimerId   = null;
+  let recordSeconds   = 0;
+  let audioCtx        = null;
+  let analyser        = null;
+  let levelAnimId     = null;
+
+  const recordBtn     = document.getElementById('record-btn');
+  const recordLabel   = document.getElementById('record-label');
+  const recordTimerEl = document.getElementById('record-timer');
+  const levelCanvas   = document.getElementById('level-canvas');
+  const vocalPreview  = document.getElementById('vocal-preview');
+  const orchestrateBtn = document.getElementById('orchestrate-btn');
+
+  async function toggleRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  }
+
+  async function startRecording() {
+    hideOrchestrateError();
+    document.getElementById('orchestrate-output-section').classList.remove('visible');
+
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      showOrchestrateError('Microphone access denied or unavailable: ' + err.message);
+      return;
+    }
+
+    recordedChunks = [];
+    recordedBlob = null;
+    mediaRecorder = new MediaRecorder(mediaStream);
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      recordedBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+      vocalPreview.src = URL.createObjectURL(recordedBlob);
+      vocalPreview.style.display = 'block';
+      orchestrateBtn.disabled = false;
+      stopLevelMeter();
+      mediaStream.getTracks().forEach(t => t.stop());
+    };
+
+    mediaRecorder.start();
+    recordBtn.classList.add('recording');
+    recordLabel.textContent = 'Stop Recording';
+    recordSeconds = 0;
+    updateRecordTimer();
+    recordTimerId = setInterval(() => {
+      recordSeconds++;
+      updateRecordTimer();
+      if (recordSeconds >= MAX_RECORD_SECONDS) stopRecording();
+    }, 1000);
+
+    startLevelMeter(mediaStream);
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    clearInterval(recordTimerId);
+    recordBtn.classList.remove('recording');
+    recordLabel.textContent = 'Start Recording';
+  }
+
+  function updateRecordTimer() {
+    const m = Math.floor(recordSeconds / 60);
+    const s = String(recordSeconds % 60).padStart(2, '0');
+    recordTimerEl.innerHTML = `${m}:${s} <span class="record-timer-max">/ 1:00</span>`;
+  }
+
+  function startLevelMeter(stream) {
+    audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+
+    levelCanvas.classList.add('visible');
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function draw() {
+      levelAnimId = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(data);
+
+      const w = levelCanvas.offsetWidth * 2;
+      const h = 80;
+      levelCanvas.width = w;
+      levelCanvas.height = h;
+      const c = levelCanvas.getContext('2d');
+      c.clearRect(0, 0, w, h);
+
+      const barCount = 40;
+      const barWidth = w / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const value = data[Math.floor(i * data.length / barCount)] / 255;
+        const barHeight = value * h;
+        c.fillStyle = '#7C3AED';
+        c.fillRect(i * barWidth, h - barHeight, barWidth * 0.7, barHeight);
+      }
+    }
+    draw();
+  }
+
+  function stopLevelMeter() {
+    if (levelAnimId) cancelAnimationFrame(levelAnimId);
+    if (audioCtx) audioCtx.close();
+    levelCanvas.classList.remove('visible');
+  }
+
+  // ── Sing & Orchestrate: generate ──────────────────────────────────────────
+  let orchestratedMixBlob = null;
+  let orchestratedMixName = 'auvia_orchestrated.wav';
+  let orchestratedInstrumentalBlob = null;
+  let orchestratedInstrumentalName = 'auvia_instrumental.mp3';
+
+  async function generateOrchestration() {
+    if (!recordedBlob) return;
+    hideOrchestrateError();
+    setOrchestrateLoading(true);
+    document.getElementById('orchestrate-output-section').classList.remove('visible');
+
+    try {
+      const form = new FormData();
+      form.append('file', recordedBlob, 'vocal.webm');
+      form.append('mood', document.getElementById('mood-input').value);
+
+      const res = await fetch(API_BASE + '/orchestrate', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Orchestration failed');
+      if (data.status !== 'success') throw new Error(data.result || 'Unknown error');
+
+      showOrchestrateOutput(data);
+
+    } catch (err) {
+      showOrchestrateError(err.message);
+    } finally {
+      setOrchestrateLoading(false);
+    }
+  }
+
+  function setOrchestrateLoading(loading) {
+    if (loading) {
+      orchestrateBtn.disabled = true;
+      orchestrateBtn.innerHTML = `
+        <div class="bars">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          <div class="bar"></div><div class="bar"></div>
+        </div>
+        Composing…`;
+    } else {
+      orchestrateBtn.disabled = !recordedBlob;
+      orchestrateBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <polygon points="6,3 15,9 6,15" fill="white"/>
+        </svg>
+        Generate Orchestration`;
+    }
+  }
+
+  function b64ToBlob(b64, type) {
+    const bytes = atob(b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return new Blob([arr], { type });
+  }
+
+  function showOrchestrateOutput(data) {
+    orchestratedMixBlob = data.audio_b64 ? b64ToBlob(data.audio_b64, 'audio/wav') : null;
+    orchestratedMixName = data.filename || 'auvia_orchestrated.wav';
+
+    const player = document.getElementById('orchestrate-output-player');
+    if (orchestratedMixBlob) player.src = URL.createObjectURL(orchestratedMixBlob);
+
+    const instrumentalBtn = document.getElementById('download-instrumental-btn');
+    if (data.instrumental_b64) {
+      orchestratedInstrumentalBlob = b64ToBlob(data.instrumental_b64, 'audio/mpeg');
+      orchestratedInstrumentalName = `auvia_instrumental_${(data.session_id || '').slice(0, 8)}.mp3`;
+      instrumentalBtn.style.display = '';
+    } else {
+      orchestratedInstrumentalBlob = null;
+      instrumentalBtn.style.display = 'none';
+    }
+
+    const meta = document.getElementById('orchestrate-result-meta');
+    meta.innerHTML = '';
+    if (data.tempo_bpm) meta.innerHTML += `<span class="badge badge-purple">♩ ${data.tempo_bpm} BPM</span>`;
+    if (data.key) meta.innerHTML += `<span class="badge badge-purple">♪ ${data.key}</span>`;
+    if (data.language_code) meta.innerHTML += `<span class="badge badge-green">${data.language_code}</span>`;
+
+    const transcriptEl = document.getElementById('orchestrate-transcript');
+    transcriptEl.style.display = data.transcript ? '' : 'none';
+    transcriptEl.textContent = data.transcript ? '"' + data.transcript + '"' : '';
+
+    const resultEl = document.getElementById('orchestrate-result-text');
+    resultEl.style.display = data.agent_response ? '' : 'none';
+    resultEl.textContent = data.agent_response || '';
+
+    document.getElementById('orchestrate-output-section').classList.add('visible');
+    document.getElementById('orchestrate-output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function downloadOrchestrated() {
+    if (!orchestratedMixBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(orchestratedMixBlob);
+    a.download = orchestratedMixName;
+    a.click();
+  }
+
+  function downloadInstrumental() {
+    if (!orchestratedInstrumentalBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(orchestratedInstrumentalBlob);
+    a.download = orchestratedInstrumentalName;
+    a.click();
+  }
+
+  function showOrchestrateError(msg) {
+    const el = document.getElementById('orchestrate-error-box');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideOrchestrateError() {
+    document.getElementById('orchestrate-error-box').classList.remove('visible');
   }
 </script>
 </body>
