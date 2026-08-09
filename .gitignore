@@ -41,6 +41,7 @@ Untitled
 
 # Cloudflare Wrangler local state
 .wrangler/
+node_modules/
 
 # Jupyter
 .ipynb_checkpoints/google-cloud-sdk/
