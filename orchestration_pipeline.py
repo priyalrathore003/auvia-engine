@@ -101,6 +101,64 @@ def trim_audio_bytes(audio_bytes: bytes, ext: str, max_seconds: float) -> bytes:
     return _to_wav_bytes(y, sr)
 
 
+_MIN_STRETCH_RATIO = 0.75
+_MAX_STRETCH_RATIO = 1.35
+
+
+def tempo_lock_backing(target_bpm: float, backing_bytes: bytes, backing_ext: str) -> bytes:
+    """
+    Time-stretches the generated backing track so its actual tempo matches
+    the vocal's detected BPM. ElevenLabs Music has no numeric tempo
+    parameter — the prompt can only *hint* at a BPM — so generated output
+    routinely drifts a few BPM off. This closes that gap with a real DSP
+    correction instead of hoping the model listens to the prompt.
+
+    Always returns WAV bytes (re-encoding even when the stretch itself is
+    skipped), so callers never have to guess the output format.
+    """
+    try:
+        backing, sr = load_audio_from_bytes(backing_bytes, backing_ext, sr=None, mono=True)
+    except Exception as e:
+        logger.warning("[TEMPO-LOCK] could not decode backing track (%s)", e)
+        return backing_bytes
+
+    if not target_bpm or target_bpm <= 0:
+        return _to_wav_bytes(backing, sr)
+
+    try:
+        detected_tempo, _ = librosa.beat.beat_track(y=backing, sr=sr)
+        detected_bpm = float(np.atleast_1d(detected_tempo)[0])
+
+        if not detected_bpm or detected_bpm <= 0:
+            logger.warning("[TEMPO-LOCK] no beat detected in backing track — skipping")
+            return _to_wav_bytes(backing, sr)
+
+        ratio = target_bpm / detected_bpm
+        # beat trackers commonly report half/double the true tempo — fold
+        # the ratio into range before deciding whether it's a sane stretch
+        while ratio > _MAX_STRETCH_RATIO:
+            ratio /= 2
+        while ratio < _MIN_STRETCH_RATIO:
+            ratio *= 2
+
+        if not (_MIN_STRETCH_RATIO <= ratio <= _MAX_STRETCH_RATIO):
+            logger.warning(
+                "[TEMPO-LOCK] required stretch %.2fx out of safe range — skipping", ratio
+            )
+            return _to_wav_bytes(backing, sr)
+
+        stretched = librosa.effects.time_stretch(backing, rate=ratio)
+        logger.info(
+            "[TEMPO-LOCK] backing %.1f bpm -> target %.1f bpm (stretch %.2fx)",
+            detected_bpm, target_bpm, ratio,
+        )
+        return _to_wav_bytes(stretched, sr)
+
+    except Exception as e:
+        logger.warning("[TEMPO-LOCK] failed (%s) — using unstretched backing", e)
+        return _to_wav_bytes(backing, sr)
+
+
 def mix_vocal_with_backing(
     vocal_bytes: bytes, vocal_ext: str, backing_bytes: bytes, backing_ext: str
 ) -> bytes:

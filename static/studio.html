@@ -377,6 +377,17 @@
     transform: none;
   }
 
+  #orchestrate-progress {
+    text-align: center;
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  #orchestrate-progress .stage { color: var(--accent); }
+  #orchestrate-progress .wait-estimate { display: block; margin-top: 4px; font-size: 11px; }
+
   /* ── Loading bars ── */
   .bars {
     display: flex;
@@ -506,6 +517,85 @@
     font-size: 12px;
     color: var(--muted);
   }
+
+  /* ── Upgrade modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(7,7,15,0.75);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 60px var(--accent-glow);
+    border-radius: 18px;
+    padding: 36px 32px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .modal-icon {
+    font-size: 28px;
+    background: linear-gradient(135deg, #FF6B9D, #9C27B0, #4F46E5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 12px;
+  }
+
+  .modal-card h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .modal-card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .modal-btn-primary, .modal-btn-secondary, .modal-btn-text {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
+    border: none;
+  }
+
+  .modal-btn-primary {
+    background: linear-gradient(135deg, #FF6B9D, #9C27B0, #4F46E5);
+    color: #fff;
+  }
+
+  .modal-btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text);
+  }
+
+  .modal-btn-text {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 0;
+  }
+  .modal-btn-text:hover { color: var(--text); }
 
   footer a {
     color: var(--accent);
@@ -849,6 +939,7 @@
       </svg>
       Generate Orchestration
     </button>
+    <div id="orchestrate-progress" style="display:none"></div>
 
     <!-- Output -->
     <div id="orchestrate-output-section">
@@ -917,10 +1008,23 @@
 
   </div><!-- /voice-agent-flow -->
 
+  <div id="upgrade-modal" class="modal-overlay" onclick="if(event.target===this) closeUpgradeModal()">
+    <div class="modal-card">
+      <div class="modal-icon">✦</div>
+      <h3>Upgrade to Pro</h3>
+      <p>You've used your 3 free orchestrations. Upgrade for unlimited AI backing-track generation.</p>
+      <button class="modal-btn-primary" onclick="upgradeToPlan('pro')">Upgrade to Pro — ₹499/mo</button>
+      <button class="modal-btn-secondary" onclick="upgradeToPlan('studio')">Upgrade to Studio — ₹1,499/mo</button>
+      <button class="modal-btn-text" onclick="closeUpgradeModal()">Maybe later</button>
+    </div>
+  </div>
+
   <footer>
     <a href="/">← Auvia Engine</a> &nbsp;·&nbsp;
     Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a> &nbsp;·&nbsp;
     <a href="/api">API Docs</a> &nbsp;·&nbsp;
+    <a href="/privacy">Privacy</a> &nbsp;·&nbsp;
+    <a href="/terms">Terms</a> &nbsp;·&nbsp;
     <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
   </footer>
 
@@ -937,6 +1041,42 @@
   const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8080'
     : window.location.origin;
+
+  // ── Anonymous device ID (free-tier gating) ────────────────────────────────
+  function getDeviceId() {
+    let id = localStorage.getItem('auvia_device_id');
+    if (!id) {
+      id = 'dev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+      localStorage.setItem('auvia_device_id', id);
+    }
+    return id;
+  }
+
+  function showUpgradeModal() {
+    document.getElementById('upgrade-modal').style.display = 'flex';
+  }
+
+  function closeUpgradeModal() {
+    document.getElementById('upgrade-modal').style.display = 'none';
+  }
+
+  async function upgradeToPlan(plan) {
+    const btn = event ? event.target : null;
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
+    try {
+      const form = new FormData();
+      form.append('plan', plan);
+      const res = await fetch(API_BASE + '/api/create-subscription', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Could not start checkout');
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      alert('Could not start checkout: ' + err.message);
+      if (btn) { btn.disabled = false; btn.textContent = plan === 'pro' ? 'Upgrade to Pro — ₹499/mo' : 'Upgrade to Studio — ₹1,499/mo'; }
+    }
+  }
 
   // ── File handling ──────────────────────────────────────────────────────────
   const dropZone     = document.getElementById('drop-zone');
@@ -1280,12 +1420,44 @@
   let orchestratedMixBlob = null;
   let orchestratedMixName = 'auvia_orchestrated.wav';
   let orchestratedInstrumentalBlob = null;
-  let orchestratedInstrumentalName = 'auvia_instrumental.mp3';
+  let orchestratedInstrumentalName = 'auvia_instrumental.wav';
+
+  let orchestrateProgressTimer = null;
+  let orchestrateProgressStart = 0;
+
+  function startOrchestrateProgress() {
+    orchestrateProgressStart = Date.now();
+    document.getElementById('orchestrate-progress').style.display = 'block';
+    updateOrchestrateProgress();
+    orchestrateProgressTimer = setInterval(updateOrchestrateProgress, 500);
+  }
+
+  function updateOrchestrateProgress() {
+    const el = document.getElementById('orchestrate-progress');
+    const elapsed = (Date.now() - orchestrateProgressStart) / 1000;
+
+    let stage;
+    if (elapsed < 3) stage = 'Analysing…';
+    else if (elapsed < 12) stage = 'Generating…';
+    else stage = 'Mixing…';
+
+    let html = `<span class="stage">${stage}</span>`;
+    if (elapsed > 15) {
+      html += `<span class="wait-estimate">Still working — longer clips can take up to ~30s</span>`;
+    }
+    el.innerHTML = html;
+  }
+
+  function stopOrchestrateProgress() {
+    if (orchestrateProgressTimer) { clearInterval(orchestrateProgressTimer); orchestrateProgressTimer = null; }
+    document.getElementById('orchestrate-progress').style.display = 'none';
+  }
 
   async function generateOrchestration() {
     if (!recordedBlob) return;
     hideOrchestrateError();
     setOrchestrateLoading(true);
+    startOrchestrateProgress();
     document.getElementById('orchestrate-output-section').classList.remove('visible');
 
     try {
@@ -1293,9 +1465,15 @@
       form.append('file', recordedBlob, 'vocal.webm');
       form.append('mood', document.getElementById('mood-input').value);
 
-      const res = await fetch(API_BASE + '/orchestrate', { method: 'POST', body: form });
+      const res = await fetch(API_BASE + '/orchestrate', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
       const data = await res.json();
 
+      if (res.status === 402 || data.status === 'upgrade_required') {
+        showUpgradeModal();
+        return;
+      }
       if (!res.ok) throw new Error(data.detail || 'Orchestration failed');
       if (data.status !== 'success') throw new Error(data.result || 'Unknown error');
 
@@ -1305,6 +1483,7 @@
       showOrchestrateError(err.message);
     } finally {
       setOrchestrateLoading(false);
+      stopOrchestrateProgress();
     }
   }
 
@@ -1343,8 +1522,8 @@
 
     const instrumentalBtn = document.getElementById('download-instrumental-btn');
     if (data.instrumental_b64) {
-      orchestratedInstrumentalBlob = b64ToBlob(data.instrumental_b64, 'audio/mpeg');
-      orchestratedInstrumentalName = `auvia_instrumental_${(data.session_id || '').slice(0, 8)}.mp3`;
+      orchestratedInstrumentalBlob = b64ToBlob(data.instrumental_b64, 'audio/wav');
+      orchestratedInstrumentalName = `auvia_instrumental_${(data.session_id || '').slice(0, 8)}.wav`;
       instrumentalBtn.style.display = '';
     } else {
       orchestratedInstrumentalBlob = null;

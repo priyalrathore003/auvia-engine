@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — Auvia Engine</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link rel="apple-touch-icon" href="/static/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070F; --surface: #0D0D1A; --surface2: #13132080; --border: #1E1E35;
+    --accent: #C026D3; --accent2: #4F46E5; --accent-glow: #C026D340; --accent-dim: #C026D330;
+    --brand-gradient: linear-gradient(135deg, #FF6B9D, #9C27B0, #4F46E5);
+    --text: #E2E2EE; --muted: #52526B; --success: #10B981; --error: #EF4444; --warn: #F59E0B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.6; }
+  a { color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 32px; }
+
+  header.topnav {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; background: rgba(7,7,15,0.9); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--text); }
+  .logo-text span { color: var(--accent); }
+  .topnav-links { display: flex; gap: 28px; }
+  .topnav-links a { color: var(--muted); font-size: 13px; font-weight: 500; font-family: 'Space Grotesk', sans-serif; }
+  .topnav-links a:hover { color: var(--text); text-decoration: none; }
+  .topnav-links a.active { color: var(--text); }
+
+  .hero { text-align: center; padding: 80px 0 56px; }
+  .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 600; margin-bottom: 14px; }
+  .hero p { color: var(--muted); font-size: 16px; max-width: 480px; margin: 0 auto; }
+
+  .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 28px; }
+  .billing-label { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .billing-label.active { color: var(--text); }
+  .save-badge { font-size: 10.5px; background: var(--accent-dim); color: var(--accent); padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+
+  .toggle-switch {
+    width: 46px; height: 26px; border-radius: 20px; border: none;
+    background: var(--surface2); border: 1px solid var(--border);
+    position: relative; cursor: pointer; padding: 0;
+  }
+  .toggle-switch.on { background: var(--brand-gradient); border-color: transparent; }
+  .toggle-knob {
+    position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: #fff; transition: transform 0.2s ease;
+  }
+  .toggle-switch.on .toggle-knob { transform: translateX(20px); }
+
+  .billed-note { font-size: 11.5px; color: var(--success); margin-bottom: 4px; }
+
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    padding-bottom: 80px;
+  }
+  @media (max-width: 860px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+  .price-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 32px 28px; display: flex; flex-direction: column;
+  }
+  .price-card.featured { border: 2px solid transparent; background-image: linear-gradient(var(--surface), var(--surface)), var(--brand-gradient); background-origin: border-box; background-clip: padding-box, border-box; box-shadow: 0 0 50px var(--accent-glow); position: relative; }
+  .featured-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--brand-gradient); color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; }
+
+  .price-tier { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .price-amount { font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 700; margin-bottom: 4px; }
+  .price-amount span { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .price-list { list-style: none; margin: 24px 0 28px; flex: 1; }
+  .price-list li { font-size: 13.5px; color: var(--muted); padding: 7px 0; padding-left: 22px; position: relative; }
+  .price-list li::before { content: '✓'; position: absolute; left: 0; color: var(--success); font-weight: 600; }
+
+  .plan-btn {
+    width: 100%; padding: 13px; border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; text-align: center;
+  }
+  .plan-btn-primary { background: var(--brand-gradient); color: #fff; }
+  .plan-btn-secondary { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+  .plan-btn-current { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); cursor: default; }
+  .plan-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .faq { max-width: 700px; margin: 0 auto 100px; }
+  .faq h2 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; margin-bottom: 24px; text-align: center; }
+  .faq-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
+  .faq-item h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .faq-item p { font-size: 13.5px; color: var(--muted); }
+
+  footer { padding: 40px 0; text-align: center; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); }
+  .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .footer-links a { color: var(--muted); font-size: 12px; }
+  .footer-links a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <a href="/" class="logo">
+    <img src="/static/logo.png" alt="Auvia Engine" style="height:32px;width:32px;border-radius:50%">
+    <span class="logo-text">Auvia<span> Engine</span></span>
+  </a>
+  <nav class="topnav-links">
+    <a href="/#product">Product</a>
+    <a href="/api">API</a>
+    <a href="/pricing" class="active">Pricing</a>
+    <a href="/studio">Studio</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <h1>Simple, usage-based pricing</h1>
+  <p>Start free. Upgrade the moment audio generation becomes something you rely on, not just try.</p>
+
+  <div class="billing-toggle">
+    <span class="billing-label active" id="label-monthly">Monthly</span>
+    <button class="toggle-switch" id="billing-switch" onclick="toggleBilling()" aria-label="Toggle annual billing">
+      <span class="toggle-knob"></span>
+    </button>
+    <span class="billing-label" id="label-annual">Annual <span class="save-badge">Save 20%</span></span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="pricing-grid">
+
+    <div class="price-card">
+      <div class="price-tier">Free</div>
+      <div class="price-amount">₹0<span>/mo</span></div>
+      <ul class="price-list">
+        <li>Unlimited enhance &amp; intelligence</li>
+        <li>3 AI orchestrations / device</li>
+        <li>Real-time voice agent access</li>
+        <li>Community support</li>
+      </ul>
+      <button class="plan-btn plan-btn-current" disabled>Current plan</button>
+    </div>
+
+    <div class="price-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="price-tier">Pro</div>
+      <div class="price-amount"><span class="amount-monthly">₹499</span><span class="amount-annual" style="display:none">₹399</span><span>/mo</span></div>
+      <div class="billed-note" style="display:none">billed ₹4,790/year</div>
+      <ul class="price-list">
+        <li>Everything in Free</li>
+        <li><strong style="color:var(--text)">Unlimited</strong> AI orchestrations</li>
+        <li>Higher API rate limits</li>
+        <li>Priority processing queue</li>
+        <li>Email support</li>
+      </ul>
+      <button class="plan-btn plan-btn-primary" onclick="upgradeToPlan('pro')">Upgrade to Pro</button>
+    </div>
+
+    <div class="price-card">
+      <div class="price-tier">Studio</div>
+      <div class="price-amount"><span class="amount-monthly">₹1,499</span><span class="amount-annual" style="display:none">₹1,199</span><span>/mo</span></div>
+      <div class="billed-note" style="display:none">billed ₹14,390/year</div>
+      <ul class="price-list">
+        <li>Everything in Pro</li>
+        <li>Highest rate limits</li>
+        <li>Priority support</li>
+        <li>Custom voice / model tuning</li>
+      </ul>
+      <button class="plan-btn plan-btn-secondary" onclick="upgradeToPlan('studio')">Upgrade to Studio</button>
+    </div>
+
+  </div>
+
+  <div class="faq">
+    <h2>Questions</h2>
+    <div class="faq-item">
+      <h3>How does the free tier work?</h3>
+      <p>Enhancement and acoustic intelligence are unlimited on every plan. AI backing-track generation (Orchestrate) is capped at 3 uses per device on the free tier, since it's the most expensive endpoint to run — upgrade for unlimited use.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Can I cancel anytime?</h3>
+      <p>Yes. Cancelling stops future billing immediately; you keep access through the end of the period you already paid for.</p>
+    </div>
+    <div class="faq-item">
+      <h3>What's your refund policy?</h3>
+      <p>Full refund within 7 days of your charge, no questions asked. See <a href="/terms">Terms of Service</a> for details.</p>
+    </div>
+    <div class="faq-item">
+      <h3>How is payment processed?</h3>
+      <p>Subscriptions are billed via Razorpay. We never see or store your card details.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/api">API Docs</a>
+    <a href="/studio">Studio</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </div>
+  <div>&copy; Auvia Engine</div>
+</footer>
+
+<script>
+  const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8080'
+    : window.location.origin;
+
+  function getDeviceId() {
+    let id = localStorage.getItem('auvia_device_id');
+    if (!id) {
+      id = 'dev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+      localStorage.setItem('auvia_device_id', id);
+    }
+    return id;
+  }
+
+  let billingPeriod = 'monthly';
+
+  function toggleBilling() {
+    billingPeriod = billingPeriod === 'monthly' ? 'annual' : 'monthly';
+    const isAnnual = billingPeriod === 'annual';
+
+    document.getElementById('billing-switch').classList.toggle('on', isAnnual);
+    document.getElementById('label-monthly').classList.toggle('active', !isAnnual);
+    document.getElementById('label-annual').classList.toggle('active', isAnnual);
+
+    document.querySelectorAll('.amount-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+    document.querySelectorAll('.amount-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+    document.querySelectorAll('.billed-note').forEach(el => el.style.display = isAnnual ? 'block' : 'none');
+  }
+
+  async function upgradeToPlan(plan) {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+    try {
+      const form = new FormData();
+      form.append('plan', plan);
+      form.append('billing', billingPeriod);
+      const res = await fetch(API_BASE + '/api/create-subscription', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Could not start checkout');
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      alert('Could not start checkout: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+</script>
+
+</body>
+</html>

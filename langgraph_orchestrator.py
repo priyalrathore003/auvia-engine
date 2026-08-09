@@ -49,7 +49,13 @@ def get_llm():
         return ChatGoogleGenerativeAI(
             model="gemini-3.6-flash",
             google_api_key=os.getenv("GEMINI_API_KEY"),
-            temperature=0
+            temperature=0,
+            # Free-tier Gemini rate limits (20 req/day) mean 429s are common;
+            # the SDK's default retry/backoff can burn 45-60s before giving
+            # up. Fail fast instead so callers hit their template fallback
+            # quickly rather than stalling.
+            max_retries=1,
+            timeout=15,
         )
     elif provider == "openai":
         from langchain_openai import ChatOpenAI

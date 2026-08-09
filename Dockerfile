@@ -26,7 +26,7 @@ RUN mkdir -p /tmp/huggingface && python -c "from sentence_transformers import Se
 COPY main.py dsp_pipeline.py langgraph_orchestrator.py rag_storage.py ./
 COPY orchestration_pipeline.py orchestration_graph.py ./
 COPY voice_agent_pipeline.py voice_agent_ws.py ./
-COPY intelligence_pipeline.py ./
+COPY intelligence_pipeline.py usage_tracking.py ./
 COPY integrations/ integrations/
 COPY static/ static/
 

@@ -26,6 +26,7 @@
     --warn:        #F59E0B;
   }
 
+  html { scroll-behavior: smooth; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -60,6 +61,17 @@
     border-radius: 4px;
     padding: 1px 6px;
   }
+
+  .gradient-text {
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ── Entrance animations ── */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
 
   /* ── Nav ── */
   header.topnav {
@@ -102,6 +114,7 @@
     font-weight: 600;
     cursor: pointer;
     border: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .btn-primary {
@@ -109,6 +122,7 @@
     color: #fff;
     box-shadow: 0 0 32px var(--accent-glow);
   }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 46px var(--accent-glow); }
 
   .btn-secondary {
     background: transparent;
@@ -119,9 +133,40 @@
 
   /* ── Hero ── */
   .hero {
-    padding: 100px 0 70px;
+    position: relative;
+    padding: 110px 0 80px;
     text-align: center;
+    overflow: hidden;
   }
+
+  #hero-waveform {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    opacity: 0.22;
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 35%, black 65%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 35%, black 65%, transparent);
+    pointer-events: none;
+  }
+
+  #hero-waveform .wbar {
+    width: 4px;
+    min-height: 6px;
+    background: var(--brand-gradient);
+    border-radius: 2px;
+    animation: wave-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes wave-pulse {
+    0%, 100% { transform: scaleY(0.18); }
+    50%      { transform: scaleY(1); }
+  }
+
+  .hero-content { position: relative; z-index: 1; }
 
   .hero-badge {
     display: inline-block;
@@ -131,32 +176,64 @@
     text-transform: uppercase;
     color: var(--accent);
     background: var(--accent-dim);
-    border: 1px solid #7C3AED40;
+    border: 1px solid #C026D340;
     border-radius: 20px;
     padding: 5px 14px;
     margin-bottom: 24px;
   }
 
   .hero h1 {
-    font-size: 52px;
-    font-weight: 600;
-    max-width: 780px;
+    font-size: 56px;
+    font-weight: 700;
+    max-width: 800px;
     margin: 0 auto 20px;
+    line-height: 1.08;
   }
 
   .hero .subline {
     font-size: 17px;
     color: var(--muted);
-    max-width: 620px;
+    max-width: 600px;
     margin: 0 auto 36px;
   }
 
   .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
   @media (max-width: 600px) {
-    .hero h1 { font-size: 34px; }
-    .hero { padding: 70px 0 50px; }
+    .hero h1 { font-size: 36px; }
+    .hero { padding: 80px 0 56px; }
   }
+
+  /* ── Social proof ── */
+  .social-proof {
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .social-proof-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .partner-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    align-items: center;
+  }
+  .partner-strip span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .partner-strip span:hover { opacity: 1; color: var(--text); }
 
   /* ── Sections ── */
   section { padding: 80px 0; border-top: 1px solid var(--border); }
@@ -184,9 +261,26 @@
     background: var(--accent-dim);
     transition: all 0.2s;
     margin-bottom: 32px;
+    position: relative;
   }
 
-  #demo-drop-zone:hover, #demo-drop-zone.drag-over { border-color: var(--accent); background: #2D1B6945; }
+  #demo-drop-zone:hover, #demo-drop-zone.drag-over {
+    border-color: transparent;
+    background: #2D1B6945;
+  }
+
+  #demo-drop-zone:hover::before, #demo-drop-zone.drag-over::before {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: var(--brand-gradient);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 
   #demo-file-input { display: none; }
 
@@ -222,9 +316,33 @@
     justify-content: space-between;
   }
 
+  .latency-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--success);
+    background: #10B98115;
+    border: 1px solid #10B98140;
+    border-radius: 10px;
+    padding: 1px 7px;
+  }
+
   .demo-idle { color: var(--muted); font-size: 13px; }
 
-  .demo-bars { display: flex; align-items: flex-end; gap: 3px; height: 20px; }
+  /* Skeleton loader */
+  .skeleton-block {
+    height: 14px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--surface2) 25%, #2a2a4560 37%, var(--surface2) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    margin-bottom: 10px;
+  }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+  .demo-bars { display: flex; align-items: flex-end; gap: 3px; height: 20px; margin-bottom: 12px; }
   .demo-bars .bar { width: 3px; background: var(--accent); border-radius: 2px; animation: pulse-bar 0.8s ease-in-out infinite; }
   .demo-bars .bar:nth-child(1) { height: 8px; animation-delay: 0s; }
   .demo-bars .bar:nth-child(2) { height: 14px; animation-delay: 0.1s; }
@@ -240,6 +358,23 @@
     accent-color: var(--accent);
     filter: invert(1) hue-rotate(200deg) saturate(0.6);
   }
+
+  .demo-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid #C026D340;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .demo-download-btn:hover { background: #2D1B6945; }
 
   .demo-error { color: var(--error); font-size: 13px; }
 
@@ -286,13 +421,18 @@
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 24px;
+    transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+  }
+  .feature-card:hover {
+    box-shadow: 0 0 44px var(--accent-glow);
+    transform: translateY(-3px);
+    border-color: #C026D355;
   }
 
   .feature-icon {
     width: 40px; height: 40px;
     border-radius: 10px;
-    background: var(--accent-dim);
-    border: 1px solid #7C3AED40;
+    background: var(--brand-gradient);
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 16px;
   }
@@ -320,6 +460,22 @@
   pre .tok-flag { color: #A78BFA; }
 
   /* ── Pricing ── */
+  .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin: -20px 0 44px; }
+  .billing-label { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .billing-label.active { color: var(--text); }
+  .save-badge { font-size: 10.5px; background: var(--accent-dim); color: var(--accent); padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+  .toggle-switch {
+    width: 46px; height: 26px; border-radius: 20px;
+    background: var(--surface2); border: 1px solid var(--border);
+    position: relative; cursor: pointer; padding: 0;
+  }
+  .toggle-switch.on { background: var(--brand-gradient); border-color: transparent; }
+  .toggle-knob {
+    position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: #fff; transition: transform 0.2s ease;
+  }
+  .toggle-switch.on .toggle-knob { transform: translateX(20px); }
+
   .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   @media (max-width: 860px) { .pricing-grid { grid-template-columns: 1fr; } }
 
@@ -328,16 +484,34 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 32px 26px;
+    position: relative;
   }
 
-  .price-card.featured { border-color: var(--accent); box-shadow: 0 0 40px var(--accent-glow); }
+  .price-card.featured {
+    border: 2px solid transparent;
+    background-image: linear-gradient(var(--surface), var(--surface)), var(--brand-gradient);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    box-shadow: 0 0 50px var(--accent-glow);
+  }
+
+  .featured-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--brand-gradient); color: #fff;
+    font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.06em; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;
+  }
 
   .price-tier { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
   .price-amount { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; margin-bottom: 4px; }
   .price-amount span { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .billed-note { font-size: 11px; color: var(--success); margin-bottom: 4px; }
   .price-list { list-style: none; margin: 22px 0 26px; padding: 0; }
   .price-list li { font-size: 13px; color: var(--muted); padding: 6px 0; padding-left: 20px; position: relative; }
   .price-list li::before { content: '✓'; position: absolute; left: 0; color: var(--success); }
+
+  .plan-btn { width: 100%; justify-content: center; text-align: center; }
+  .plan-btn-current { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); cursor: default; padding: 13px; border-radius: 10px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; }
 
   /* ── About ── */
   .about-block {
@@ -355,15 +529,26 @@
 
   /* ── Footer ── */
   footer {
-    padding: 40px 0 60px;
+    padding: 48px 0 60px;
     text-align: center;
     font-size: 13px;
     color: var(--muted);
   }
 
-  .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .footer-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+  .footer-tagline { font-size: 12.5px; color: var(--muted); margin-bottom: 24px; }
+
+  .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
   .footer-links a { color: var(--muted); font-size: 13px; }
   .footer-links a:hover { color: var(--accent); }
+
+  .footer-powered-by {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.7;
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
@@ -375,28 +560,42 @@
   <nav class="topnav-links">
     <a href="#product">Product</a>
     <a href="/api">API</a>
-    <a href="/api">Docs</a>
-    <a href="#pricing">Pricing</a>
+    <a href="/pricing">Pricing</a>
     <a href="/studio">Studio</a>
   </nav>
 </header>
 
 <!-- Hero -->
 <section class="hero" id="product" style="border-top:none">
-  <div class="wrap">
+  <div id="hero-waveform"></div>
+  <div class="wrap hero-content">
     <span class="hero-badge">Open Beta · No API Key Required Yet</span>
-    <h1>Audio Intelligence Infrastructure</h1>
-    <p class="subline">One API. Real audio in. Acoustic intelligence, enhanced output, and AI-generated content out.</p>
+    <h1>Audio Intelligence.<br><span class="gradient-text">Built for Creators.</span></h1>
+    <p class="subline">Upload real audio. Get back enhanced output, acoustic insights, and AI-generated music.</p>
     <div class="hero-ctas">
-      <a href="#demo" class="btn-primary">Try the demo</a>
-      <a href="/api" class="btn-secondary">View API docs</a>
+      <a href="#demo" class="btn-primary">Try Free</a>
+      <a href="/api" class="btn-secondary">View API</a>
+    </div>
+  </div>
+</section>
+
+<!-- Social proof -->
+<section class="social-proof" style="padding-top:0; padding-bottom:32px;">
+  <div class="wrap">
+    <div class="social-proof-label">Built on</div>
+    <div class="partner-strip">
+      <span>Google Cloud</span>
+      <span>ElevenLabs</span>
+      <span>Sarvam AI</span>
+      <span>Gemini</span>
+      <span>LangGraph</span>
     </div>
   </div>
 </section>
 
 <!-- Live demo -->
 <section id="demo">
-  <div class="wrap">
+  <div class="wrap reveal">
     <div class="section-eyebrow">Live Demo</div>
     <h2 class="section-title">Upload audio, see three outputs at once</h2>
     <p class="section-sub">No signup. This runs against the real API, right now.</p>
@@ -409,15 +608,15 @@
 
     <div class="demo-grid">
       <div class="demo-panel" id="panel-enhance">
-        <div class="demo-panel-label">Enhanced Audio</div>
+        <div class="demo-panel-label"><span>Enhanced Audio</span></div>
         <div id="body-enhance"><div class="demo-idle">Upload a file to run this live.</div></div>
       </div>
       <div class="demo-panel" id="panel-intelligence">
-        <div class="demo-panel-label">Intelligence Report</div>
+        <div class="demo-panel-label"><span>Intelligence Report</span></div>
         <div id="body-intelligence"><div class="demo-idle">Pitch, key, tempo, and a quality score.</div></div>
       </div>
       <div class="demo-panel" id="panel-orchestrate">
-        <div class="demo-panel-label">AI Backing Track</div>
+        <div class="demo-panel-label"><span>AI Backing Track</span></div>
         <div id="body-orchestrate"><div class="demo-idle">15s preview · full length via the API.</div></div>
       </div>
     </div>
@@ -428,7 +627,7 @@
 
 <!-- Features -->
 <section id="features">
-  <div class="wrap">
+  <div class="wrap reveal">
     <div class="section-eyebrow">Capabilities</div>
     <h2 class="section-title">Four engines, one API</h2>
     <p class="section-sub">Each endpoint is independently useful. Together they cover the full loop from raw audio to finished, intelligent output.</p>
@@ -436,28 +635,28 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9h2l2-6 3 12 2-9 2 6h3" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9h2l2-6 3 12 2-9 2 6h3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <h3>Audio Enhancement Engine</h3>
         <p>Production-grade DSP + AI processing — noise reduction, spectral EQ, peak normalization, agentic reasoning about what a recording needs.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="#A78BFA" stroke-width="1.5"/><path d="M9 5.5v3.5l2.5 2" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="#fff" stroke-width="1.5"/><path d="M9 5.5v3.5l2.5 2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
         <h3>Acoustic Intelligence</h3>
         <p>Structured data from any audio input — pitch, note, key, tempo, noise floor, dynamic range, and a 0–100 quality score, as clean JSON.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <h3>Content Generation</h3>
         <p>AI backing tracks matched to input audio — tempo- and key-locked instrumentals composed around a vocal recording, mixed and ready.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6.5" y="2" width="5" height="9" rx="2.5" stroke="#A78BFA" stroke-width="1.5"/><path d="M4 9a5 5 0 0010 0M9 14v2.5" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6.5" y="2" width="5" height="9" rx="2.5" stroke="#fff" stroke-width="1.5"/><path d="M4 9a5 5 0 0010 0M9 14v2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
         <h3>Voice Agent</h3>
         <p>Real-time conversational audio AI — local VAD turn-taking, cascaded STT → LLM → TTS, sub-second latency measured per stage. <a href="/studio">Try it →</a></p>
@@ -468,7 +667,7 @@
 
 <!-- API -->
 <section id="api-section">
-  <div class="wrap">
+  <div class="wrap reveal">
     <div class="section-eyebrow">For Developers</div>
     <h2 class="section-title">Built for developers</h2>
     <div class="api-cta-grid">
@@ -494,44 +693,56 @@ curl -X POST https://auviaengine.com/intelligence \
 
 <!-- Pricing -->
 <section id="pricing">
-  <div class="wrap">
+  <div class="wrap reveal">
     <div class="section-eyebrow">Pricing</div>
-    <h2 class="section-title">Straightforward, usage-based plans</h2>
-    <p class="section-sub">Currently in open beta — every plan below activates once keyed access rolls out. Reach out for early terms.</p>
+    <h2 class="section-title">Simple, usage-based plans</h2>
+    <p class="section-sub">Start free. Upgrade the moment audio generation becomes something you rely on.</p>
+
+    <div class="billing-toggle">
+      <span class="billing-label active" id="label-monthly">Monthly</span>
+      <button class="toggle-switch" id="billing-switch" onclick="toggleBilling()" aria-label="Toggle annual billing">
+        <span class="toggle-knob"></span>
+      </button>
+      <span class="billing-label" id="label-annual">Annual <span class="save-badge">Save 20%</span></span>
+    </div>
 
     <div class="pricing-grid">
       <div class="price-card">
-        <div class="price-tier">Developer</div>
-        <div class="price-amount">$49<span>/mo</span></div>
+        <div class="price-tier">Free</div>
+        <div class="price-amount">₹0<span>/mo</span></div>
         <ul class="price-list">
-          <li>All four API endpoints</li>
-          <li>Standard rate limits</li>
+          <li>Unlimited enhance &amp; intelligence</li>
+          <li>3 AI orchestrations / device</li>
+          <li>Real-time voice agent access</li>
           <li>Community support</li>
-          <li>Good for prototypes &amp; side projects</li>
         </ul>
-        <a href="/api#get-key" class="btn-secondary" style="width:100%; justify-content:center">Get started</a>
+        <button class="plan-btn-current">Current plan</button>
       </div>
+
       <div class="price-card featured">
-        <div class="price-tier">Business</div>
-        <div class="price-amount">$299<span>/mo</span></div>
+        <div class="featured-badge">Most Popular</div>
+        <div class="price-tier">Pro</div>
+        <div class="price-amount"><span class="amount-monthly">₹499</span><span class="amount-annual" style="display:none">₹399</span><span>/mo</span></div>
+        <div class="billed-note" style="display:none">billed ₹4,790/year</div>
         <ul class="price-list">
-          <li>Everything in Developer</li>
-          <li>Higher rate limits</li>
+          <li>Everything in Free</li>
+          <li><strong style="color:var(--text)">Unlimited</strong> AI orchestrations</li>
+          <li>Higher API rate limits</li>
           <li>Priority processing queue</li>
-          <li>Email support</li>
         </ul>
-        <a href="/api#get-key" class="btn-primary" style="width:100%; justify-content:center">Get started</a>
+        <button class="plan-btn btn-primary" onclick="upgradeToPlan('pro')">Upgrade to Pro</button>
       </div>
+
       <div class="price-card">
-        <div class="price-tier">Enterprise</div>
-        <div class="price-amount">Custom</div>
+        <div class="price-tier">Studio</div>
+        <div class="price-amount"><span class="amount-monthly">₹1,499</span><span class="amount-annual" style="display:none">₹1,199</span><span>/mo</span></div>
+        <div class="billed-note" style="display:none">billed ₹14,390/year</div>
         <ul class="price-list">
-          <li>Everything in Business</li>
-          <li>Custom rate limits &amp; SLAs</li>
-          <li>Dedicated support</li>
+          <li>Everything in Pro</li>
+          <li>Highest rate limits</li>
           <li>Custom voice / model tuning</li>
         </ul>
-        <a href="/api#get-key" class="btn-secondary" style="width:100%; justify-content:center">Contact us</a>
+        <button class="plan-btn btn-secondary" onclick="upgradeToPlan('studio')">Upgrade to Studio</button>
       </div>
     </div>
   </div>
@@ -539,7 +750,7 @@ curl -X POST https://auviaengine.com/intelligence \
 
 <!-- About -->
 <section id="about">
-  <div class="wrap">
+  <div class="wrap reveal">
     <div class="section-eyebrow" style="text-align:center">About</div>
     <div class="about-block">
       <p>Built by <strong>Priyal Rathore</strong> — AI engineer and trained classical vocalist. The domain expertise is the product.</p>
@@ -549,13 +760,22 @@ curl -X POST https://auviaengine.com/intelligence \
 
 <footer>
   <div class="wrap">
+    <div class="footer-logo">
+      <img src="/static/logo.png" alt="Auvia Engine" style="height:28px;width:28px;border-radius:50%">
+      <span class="logo-text">Auvia<span> Engine</span></span>
+    </div>
+    <div class="footer-tagline">Audio intelligence infrastructure for creators.</div>
     <div class="footer-links">
-      <a href="/api">API Docs</a>
+      <a href="/studio">Studio</a>
+      <a href="/api">API</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
       <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
       <a href="https://linkedin.com/in/priyalrathore17">LinkedIn</a>
-      <a href="mailto:priyalrathore2003@gmail.com">Email</a>
     </div>
-    <div>&copy; Auvia Engine</div>
+    <div>&copy; Auvia Engine — Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a></div>
+    <div class="footer-powered-by">Powered by Google Cloud · ElevenLabs · Sarvam AI · Gemini · LangGraph</div>
   </div>
 </footer>
 
@@ -566,6 +786,81 @@ curl -X POST https://auviaengine.com/intelligence \
 
   const DEMO_ORCHESTRATE_MAX_SECONDS = 15; // bounds ElevenLabs Music credit spend on the public demo
 
+  function getDeviceId() {
+    let id = localStorage.getItem('auvia_device_id');
+    if (!id) {
+      id = 'dev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+      localStorage.setItem('auvia_device_id', id);
+    }
+    return id;
+  }
+
+  // ── Hero waveform (pure CSS animation, JS only generates the bars) ────────
+  (function renderHeroWaveform() {
+    const container = document.getElementById('hero-waveform');
+    const barCount = 56;
+    let html = '';
+    for (let i = 0; i < barCount; i++) {
+      const height = 20 + Math.round(Math.random() * 60);
+      const delay = (Math.random() * 1.6).toFixed(2);
+      html += `<div class="wbar" style="height:${height}px; animation-delay:${delay}s"></div>`;
+    }
+    container.innerHTML = html;
+  })();
+
+  // ── Scroll-triggered entrance animations ───────────────────────────────────
+  (function setupRevealObserver() {
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => observer.observe(el));
+  })();
+
+  // ── Pricing: annual toggle ─────────────────────────────────────────────────
+  let billingPeriod = 'monthly';
+
+  function toggleBilling() {
+    billingPeriod = billingPeriod === 'monthly' ? 'annual' : 'monthly';
+    const isAnnual = billingPeriod === 'annual';
+
+    document.getElementById('billing-switch').classList.toggle('on', isAnnual);
+    document.getElementById('label-monthly').classList.toggle('active', !isAnnual);
+    document.getElementById('label-annual').classList.toggle('active', isAnnual);
+
+    document.querySelectorAll('.amount-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+    document.querySelectorAll('.amount-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+    document.querySelectorAll('.billed-note').forEach(el => el.style.display = isAnnual ? 'block' : 'none');
+  }
+
+  async function upgradeToPlan(plan) {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+    try {
+      const form = new FormData();
+      form.append('plan', plan);
+      form.append('billing', billingPeriod);
+      const res = await fetch(API_BASE + '/api/create-subscription', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Could not start checkout');
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      alert('Could not start checkout: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  // ── Live demo ───────────────────────────────────────────────────────────────
   const dropZone = document.getElementById('demo-drop-zone');
   const fileInput = document.getElementById('demo-file-input');
 
@@ -578,21 +873,48 @@ curl -X POST https://auviaengine.com/intelligence \
     if (e.dataTransfer.files[0]) runLiveDemo(e.dataTransfer.files[0]);
   });
 
-  function loadingHtml() {
-    return `<div class="demo-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>`;
+  function skeletonHtml() {
+    return `
+      <div class="demo-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+      <div class="skeleton-block" style="width:70%"></div>
+      <div class="skeleton-block" style="width:45%"></div>
+      <div class="skeleton-block" style="width:60%"></div>
+    `;
   }
 
   function runLiveDemo(file) {
     document.getElementById('demo-drop-title').textContent = file.name;
-    ['enhance', 'intelligence', 'orchestrate'].forEach(id => {
-      document.getElementById('body-' + id).innerHTML = loadingHtml();
+    ['enhance', 'intelligence'].forEach(id => {
+      document.getElementById('body-' + id).innerHTML = skeletonHtml();
+      const badge = document.querySelector(`#panel-${id} .latency-badge`);
+      if (badge) badge.remove();
     });
+    document.getElementById('body-orchestrate').innerHTML =
+      skeletonHtml() + `<div class="demo-note" id="orchestrate-stage-label">Analysing…</div>`;
+    const orchBadge = document.querySelector('#panel-orchestrate .latency-badge');
+    if (orchBadge) orchBadge.remove();
+
     runEnhancePanel(file);
     runIntelligencePanel(file);
     runOrchestratePanel(file);
   }
 
+  function setLatencyBadge(panelId, ms) {
+    const label = document.querySelector(`#panel-${panelId} .demo-panel-label`);
+    if (!label) return;
+    const seconds = (ms / 1000).toFixed(1);
+    const badge = document.createElement('span');
+    badge.className = 'latency-badge';
+    badge.textContent = seconds + 's';
+    label.appendChild(badge);
+  }
+
+  function downloadButtonHtml(url, filename) {
+    return `<a class="demo-download-btn" href="${url}" download="${filename}">⬇ Download</a>`;
+  }
+
   async function runEnhancePanel(file) {
+    const start = performance.now();
     try {
       const form = new FormData();
       form.append('file', file);
@@ -604,14 +926,17 @@ curl -X POST https://auviaengine.com/intelligence \
       const url = URL.createObjectURL(blob);
       document.getElementById('body-enhance').innerHTML = `
         <audio controls src="${url}"></audio>
+        ${downloadButtonHtml(url, data.filename || 'auvia_enhanced.wav')}
         <div class="demo-note">${data.result || ''}</div>
       `;
+      setLatencyBadge('enhance', performance.now() - start);
     } catch (err) {
       document.getElementById('body-enhance').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
     }
   }
 
   async function runIntelligencePanel(file) {
+    const start = performance.now();
     try {
       const form = new FormData();
       form.append('file', file);
@@ -629,28 +954,57 @@ curl -X POST https://auviaengine.com/intelligence \
         <div class="intel-row"><span class="k">Dynamic range</span><span class="v">${data.dynamic_range_db} dB</span></div>
         <div class="demo-badges">${tags}</div>
       `;
+      setLatencyBadge('intelligence', performance.now() - start);
     } catch (err) {
       document.getElementById('body-intelligence').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
     }
   }
 
+  function orchestrateStageLabel(elapsedSec) {
+    if (elapsedSec < 3) return 'Analysing…';
+    if (elapsedSec < 12) return 'Generating…';
+    return 'Mixing…';
+  }
+
   async function runOrchestratePanel(file) {
+    const start = performance.now();
+    const stageTimer = setInterval(() => {
+      const elapsed = (performance.now() - start) / 1000;
+      const stageEl = document.getElementById('orchestrate-stage-label');
+      if (!stageEl) return;
+      let text = orchestrateStageLabel(elapsed);
+      if (elapsed > 15) text += ' (longer clips can take up to ~30s)';
+      stageEl.textContent = text;
+    }, 500);
+
     try {
       const trimmedBlob = await trimAudioFile(file, DEMO_ORCHESTRATE_MAX_SECONDS);
       const form = new FormData();
       form.append('file', trimmedBlob, 'demo.wav');
-      const res = await fetch(API_BASE + '/orchestrate', { method: 'POST', body: form });
+      const res = await fetch(API_BASE + '/orchestrate', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
       const data = await res.json();
+
+      if (res.status === 402 || data.status === 'upgrade_required') {
+        document.getElementById('body-orchestrate').innerHTML =
+          `<div class="demo-note">You've used your 3 free orchestrations. <a href="/pricing">Upgrade to Pro →</a></div>`;
+        return;
+      }
       if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Orchestration failed');
 
       const blob = b64ToBlob(data.audio_b64, 'audio/wav');
       const url = URL.createObjectURL(blob);
       document.getElementById('body-orchestrate').innerHTML = `
         <audio controls src="${url}"></audio>
+        ${downloadButtonHtml(url, data.filename || 'auvia_orchestrated.wav')}
         <div class="demo-note">${data.key || ''} · ${data.tempo_bpm ?? ''} BPM — 15s preview, full track via the API</div>
       `;
+      setLatencyBadge('orchestrate', performance.now() - start);
     } catch (err) {
       document.getElementById('body-orchestrate').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
+    } finally {
+      clearInterval(stageTimer);
     }
   }
 

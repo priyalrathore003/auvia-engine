@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -234,9 +234,28 @@ async def intelligence(
 async def orchestrate(
     file: UploadFile = File(..., description="Recorded vocal (wav/mp3/webm/ogg)"),
     mood: str = Form(default=""),
+    x_device_id: str = Header(default=None, alias="X-Device-Id"),
 ):
     """Sing & Orchestrate: vocal recording → LangGraph (analyze + Sarvam STT +
-    ElevenLabs Music) → mixed, downloadable track."""
+    ElevenLabs Music) → mixed, downloadable track.
+
+    Gated on the free tier (3 uses per anonymous device) if the caller sends
+    an X-Device-Id header — omitted entirely for callers that don't send one
+    (e.g. direct API usage), so this only gates the web UI's casual-use path.
+    """
+    if x_device_id:
+        from usage_tracking import check_and_increment
+
+        usage = check_and_increment(x_device_id)
+        if not usage["allowed"]:
+            return JSONResponse(
+                status_code=402,
+                content={
+                    "status": "upgrade_required",
+                    "message": "You've used your 3 free orchestrations. Upgrade to Pro for unlimited use.",
+                },
+            )
+
     session_id = str(uuid.uuid4())
     ext = get_ext(file)
     vocal_path = None
@@ -307,6 +326,69 @@ async def orchestrate(
         cleanup(vocal_path)
 
 
+@app.post("/api/create-subscription")
+async def create_subscription(
+    plan: str = Form(..., description="'pro' or 'studio'"),
+    billing: str = Form(default="monthly", description="'monthly' or 'annual'"),
+    x_device_id: str = Header(..., alias="X-Device-Id"),
+):
+    """Creates a Razorpay subscription for the given plan and returns a
+    hosted checkout URL. The subscription is tagged with the caller's
+    anonymous device ID so the webhook can upgrade the right device once
+    payment is confirmed."""
+    if plan not in ("pro", "studio"):
+        raise HTTPException(status_code=400, detail="plan must be 'pro' or 'studio'")
+    if billing not in ("monthly", "annual"):
+        raise HTTPException(status_code=400, detail="billing must be 'monthly' or 'annual'")
+
+    try:
+        from integrations.razorpay_client import create_subscription as rzp_create_subscription
+
+        result = await asyncio.to_thread(rzp_create_subscription, plan, x_device_id, billing)
+        return JSONResponse({
+            "status": "success",
+            "checkout_url": result["checkout_url"],
+            "subscription_id": result["subscription_id"],
+            "billing": result["billing"],
+        })
+
+    except Exception as e:
+        logger.exception("create-subscription error")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/api/razorpay-webhook")
+async def razorpay_webhook(request: Request):
+    """Razorpay calls this on subscription lifecycle events. Verifies the
+    HMAC signature, then on activation/charge marks the tagged device as
+    Pro so /orchestrate stops gating it."""
+    from integrations.razorpay_client import verify_webhook_signature
+    from usage_tracking import mark_pro
+
+    raw_body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+
+    if not verify_webhook_signature(raw_body, signature):
+        raise HTTPException(status_code=400, detail="invalid webhook signature")
+
+    payload = await request.json()
+    event = payload.get("event", "")
+    logger.info("[RAZORPAY] webhook event=%s", event)
+
+    if event in ("subscription.activated", "subscription.charged"):
+        subscription = payload.get("payload", {}).get("subscription", {}).get("entity", {})
+        notes = subscription.get("notes", {}) or {}
+        device_id = notes.get("device_id")
+        plan = notes.get("plan", "pro")
+
+        if device_id:
+            mark_pro(device_id, plan, subscription.get("id", ""))
+        else:
+            logger.warning("[RAZORPAY] webhook %s had no device_id in notes", event)
+
+    return JSONResponse({"status": "ok"})
+
+
 @app.websocket("/ws/voice-agent")
 async def voice_agent_ws(websocket: WebSocket):
     """Real-time voice conversation: mic PCM16 in, VAD-driven turn-taking,
@@ -315,28 +397,41 @@ async def voice_agent_ws(websocket: WebSocket):
     await handle_voice_session(websocket)
 
 
+def _serve_static_page(filename: str):
+    page = STATIC_DIR / filename
+    if not page.is_file():
+        raise HTTPException(status_code=404, detail=f"{filename} not found")
+    return FileResponse(page)
+
+
 @app.get("/")
 def serve_frontend():
-    index = STATIC_DIR / "index.html"
-    if not index.is_file():
-        raise HTTPException(status_code=404, detail="Frontend not found")
-    return FileResponse(index)
+    return _serve_static_page("index.html")
 
 
 @app.get("/api")
 def serve_api_docs():
-    api_docs = STATIC_DIR / "api.html"
-    if not api_docs.is_file():
-        raise HTTPException(status_code=404, detail="API docs not found")
-    return FileResponse(api_docs)
+    return _serve_static_page("api.html")
 
 
 @app.get("/studio")
 def serve_studio():
-    studio = STATIC_DIR / "studio.html"
-    if not studio.is_file():
-        raise HTTPException(status_code=404, detail="Studio not found")
-    return FileResponse(studio)
+    return _serve_static_page("studio.html")
+
+
+@app.get("/pricing")
+def serve_pricing():
+    return _serve_static_page("pricing.html")
+
+
+@app.get("/privacy")
+def serve_privacy():
+    return _serve_static_page("privacy.html")
+
+
+@app.get("/terms")
+def serve_terms():
+    return _serve_static_page("terms.html")
 
 
 if STATIC_DIR.is_dir():

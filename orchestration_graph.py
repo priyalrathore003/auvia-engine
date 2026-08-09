@@ -28,6 +28,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 SARVAM_MAX_CLIP_SECONDS = 30.0
+MAX_BACKING_SECONDS = 30.0
 
 
 class OrchestrationState(TypedDict):
@@ -115,9 +116,9 @@ def prompt_synthesis_node(state: OrchestrationState) -> dict:
     language = state.get("language_code") or ""
 
     fallback_prompt = (
-        f"An instrumental backing track in {key} at {tempo:.0f} BPM"
+        f"EXACTLY {tempo:.0f} BPM in {key}. An instrumental backing track"
         + (f", {mood_hint} style" if mood_hint else "")
-        + ", tasteful arrangement that leaves space for lead vocals."
+        + ", tasteful arrangement that leaves space for lead vocals. Strict tempo, no rubato."
     )
 
     try:
@@ -125,7 +126,9 @@ def prompt_synthesis_node(state: OrchestrationState) -> dict:
         prompt = f"""
 You are a music producer writing a text prompt for an AI music generator
 (ElevenLabs Music). It will generate an INSTRUMENTAL backing track to sit
-underneath a vocal recording someone just sang.
+underneath a vocal recording someone just sang. Tempo drift is the most
+common failure mode for this kind of generation, so the prompt MUST open
+by stating the BPM and key as hard constraints, not stylistic suggestions.
 
 Detected tempo: {tempo:.0f} BPM
 Detected key: {key}
@@ -133,10 +136,11 @@ User's mood/genre hint (may be empty): {mood_hint or "none given"}
 Vocal transcript (may be empty/partial): {transcript or "none"}
 Detected language: {language or "unknown"}
 
-Write ONE concise music-generation prompt (max 40 words) describing genre,
-mood, instrumentation, tempo, and key. It must produce an instrumental that
-complements the vocal, not competes with it. Respond with ONLY the prompt
-text, no quotes, no markdown.
+Write ONE concise music-generation prompt (max 40 words). It MUST start
+with "EXACTLY {tempo:.0f} BPM in {key}." verbatim, then describe genre,
+mood, and instrumentation. It must produce a steady, click-track-accurate
+instrumental that complements the vocal, not competes with it. Respond
+with ONLY the prompt text, no quotes, no markdown.
 """.strip()
 
         response = llm.invoke(prompt)
@@ -160,12 +164,21 @@ def compose_node(state: OrchestrationState) -> dict:
     logger.info(f"[COMPOSE] session={state['session_id']}")
     try:
         from integrations.elevenlabs_client import compose_music
+        from orchestration_pipeline import tempo_lock_backing
 
-        duration_ms = int((state.get("duration_sec") or 20.0) * 1000)
+        # Cap the generated loop at 30s regardless of vocal length — a
+        # shorter loop stays in tighter sync and is cheaper to generate;
+        # mix_node tiles it to cover the full vocal duration.
+        requested_sec = min(state.get("duration_sec") or 20.0, MAX_BACKING_SECONDS)
+        duration_ms = int(requested_sec * 1000)
         backing_bytes = compose_music(state["music_prompt"], duration_ms)
 
+        backing_bytes = tempo_lock_backing(
+            state.get("tempo_bpm"), backing_bytes, "mp3"
+        )
+
         base, _ = os.path.splitext(state["vocal_path"])
-        backing_path = f"{base}_backing.mp3"
+        backing_path = f"{base}_backing.wav"
         with open(backing_path, "wb") as f:
             f.write(backing_bytes)
 
@@ -194,7 +207,7 @@ def mix_node(state: OrchestrationState) -> dict:
         with open(state["backing_path"], "rb") as f:
             backing_bytes = f.read()
 
-        mixed_bytes = mix_vocal_with_backing(enhanced_vocal, "wav", backing_bytes, "mp3")
+        mixed_bytes = mix_vocal_with_backing(enhanced_vocal, "wav", backing_bytes, "wav")
 
         base, _ = os.path.splitext(state["vocal_path"])
         mixed_path = f"{base}_mixed.wav"
