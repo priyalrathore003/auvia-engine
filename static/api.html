@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Reference — Auvia Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #07070F;
+    --surface:     #0D0D1A;
+    --surface2:    #13132080;
+    --border:      #1E1E35;
+    --accent:      #7C3AED;
+    --accent2:     #4F46E5;
+    --accent-glow: #7C3AED40;
+    --accent-dim:  #2D1B6930;
+    --text:        #E2E2EE;
+    --muted:       #52526B;
+    --success:     #10B981;
+    --error:       #EF4444;
+    --warn:        #F59E0B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  /* ── Nav ── */
+  header.topnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: rgba(7,7,15,0.9);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .logo-text span { color: var(--accent); }
+
+  .topnav-links { display: flex; gap: 28px; align-items: center; }
+  .topnav-links a {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .topnav-links a.active, .topnav-links a:hover { color: var(--text); text-decoration: none; }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0,1fr);
+    max-width: 1180px;
+    margin: 0 auto;
+    gap: 48px;
+    padding: 40px 32px 100px;
+  }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    aside.sidebar { display: none; }
+  }
+
+  aside.sidebar {
+    position: sticky;
+    top: 76px;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 18px 0 6px;
+  }
+
+  .sidebar-label:first-child { margin-top: 0; }
+
+  aside.sidebar a {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  aside.sidebar a:hover { color: var(--text); background: var(--surface2); text-decoration: none; }
+
+  /* ── Main content ── */
+  main { min-width: 0; }
+
+  .doc-hero { margin-bottom: 48px; }
+
+  .doc-hero h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 34px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .doc-hero p { color: var(--muted); font-size: 15px; max-width: 640px; }
+
+  .base-url-box {
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .base-url-box .method-badge { color: var(--success); font-weight: 600; }
+
+  .auth-note {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--warn);
+    background: #F59E0B12;
+    border: 1px solid #F59E0B40;
+    border-radius: 8px;
+    padding: 10px 14px;
+    max-width: 640px;
+  }
+
+  section.endpoint {
+    border-top: 1px solid var(--border);
+    padding: 48px 0;
+    scroll-margin-top: 90px;
+  }
+
+  section.endpoint:first-of-type { border-top: none; padding-top: 0; }
+
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .method-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #10B98118;
+    color: var(--success);
+    border: 1px solid #10B98140;
+  }
+
+  .method-badge.ws { background: #7C3AED18; color: var(--accent); border-color: #7C3AED40; }
+
+  .endpoint-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .endpoint-desc { color: var(--muted); margin-bottom: 24px; max-width: 640px; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .panel-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+  }
+
+  pre .tok-key   { color: #7DD3FC; }
+  pre .tok-str   { color: #86EFAC; }
+  pre .tok-num   { color: #FCA5A5; }
+  pre .tok-bool  { color: #F0ABFC; }
+  pre .tok-comment { color: var(--muted); }
+  pre .tok-flag  { color: #A78BFA; }
+
+  table.field-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+
+  table.field-table th, table.field-table td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table.field-table th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  table.field-table td:first-child { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+  /* ── Get API key CTA ── */
+  .cta-card {
+    background: linear-gradient(135deg, #2D1B6945, #13132080);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-top: 56px;
+    text-align: center;
+  }
+
+  .cta-card h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .cta-card p { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+
+  .cta-form {
+    display: flex;
+    gap: 8px;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+
+  .cta-form input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .cta-form input:focus { border-color: var(--accent); }
+
+  .cta-form button {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .cta-note { font-size: 11px; color: var(--muted); margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <a href="/" class="logo" style="text-decoration:none">
+    <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+      <rect width="36" height="36" rx="10" fill="#7C3AED22"/>
+      <rect x="7" y="20" width="4" height="9" rx="2" fill="#7C3AED"/>
+      <rect x="14" y="14" width="4" height="15" rx="2" fill="#A78BFA"/>
+      <rect x="21" y="9" width="4" height="20" rx="2" fill="#7C3AED"/>
+      <rect x="28" y="16" width="4" height="13" rx="2" fill="#A78BFA"/>
+    </svg>
+    <span class="logo-text">Auvia<span> Engine</span></span>
+  </a>
+  <nav class="topnav-links">
+    <a href="/#product">Product</a>
+    <a href="/api" class="active">API</a>
+    <a href="/api">Docs</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-label">Overview</div>
+    <a href="#intro">Introduction</a>
+    <a href="#auth">Authentication</a>
+
+    <div class="sidebar-label">Endpoints</div>
+    <a href="#enhance-audio">POST /enhance-audio</a>
+    <a href="#process-audio">POST /process-audio</a>
+    <a href="#orchestrate">POST /orchestrate</a>
+    <a href="#intelligence">POST /intelligence</a>
+    <a href="#voice-agent">WS /ws/voice-agent</a>
+
+    <div class="sidebar-label">Access</div>
+    <a href="#get-key">Get an API key</a>
+  </aside>
+
+  <main>
+
+    <div class="doc-hero" id="intro">
+      <h1>API Reference</h1>
+      <p>Send audio in, get enhanced audio, structured acoustic intelligence, or AI-generated backing tracks out. Every endpoint accepts a raw audio file upload — no SDK required.</p>
+      <div class="base-url-box">
+        <span class="method-badge">BASE</span>
+        <span>https://auviaengine.com</span>
+      </div>
+      <div class="auth-note" id="auth">
+        <strong>Open beta:</strong> all endpoints below are currently unauthenticated — no API key is required yet.
+        Key-based access and rate limits are rolling out soon; join the list at the bottom of this page to get one early.
+      </div>
+    </div>
+
+    <!-- /enhance-audio -->
+    <section class="endpoint" id="enhance-audio">
+      <div class="endpoint-header">
+        <span class="method-badge">POST</span>
+        <span class="endpoint-path">/enhance-audio</span>
+      </div>
+      <p class="endpoint-desc">DSP-only enhancement — noise reduction, spectral EQ, peak normalization. No LLM in the loop, so it always works regardless of API credit state. Pair with <code>/intelligence</code> on the same file if you also want a quality score.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="panel-label">Request</div>
+          <pre><span class="tok-comment"># multipart/form-data</span>
+curl -X POST https://auviaengine.com/enhance-audio \
+  -F <span class="tok-flag">file</span>=@vocal.wav</pre>
+
+          <table class="field-table">
+            <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+            <tr><td>file</td><td>file</td><td>.wav or .mp3</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="panel-label">Response <span style="color:var(--muted)">200</span></div>
+          <pre>{
+  <span class="tok-key">"status"</span>: <span class="tok-str">"success"</span>,
+  <span class="tok-key">"result"</span>: <span class="tok-str">"Audio enhanced: noise reduction + spectral EQ applied."</span>,
+  <span class="tok-key">"dsp_performed"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"audio_b64"</span>: <span class="tok-str">"UklGRi...&lt;base64 wav&gt;"</span>,
+  <span class="tok-key">"filename"</span>: <span class="tok-str">"auvia_enhanced_a3f9c210.wav"</span>
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- /process-audio -->
+    <section class="endpoint" id="process-audio">
+      <div class="endpoint-header">
+        <span class="method-badge">POST</span>
+        <span class="endpoint-path">/process-audio</span>
+      </div>
+      <p class="endpoint-desc">The full agentic path: a LangGraph pipeline reasons about your instruction, queries a RAG knowledge base, decides whether DSP is needed, and returns both the processed audio and its reasoning.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="panel-label">Request</div>
+          <pre><span class="tok-comment"># multipart/form-data</span>
+curl -X POST https://auviaengine.com/process-audio \
+  -F <span class="tok-flag">file</span>=@vocal.wav \
+  -F <span class="tok-flag">query</span>=<span class="tok-str">"Remove background noise and warm up the vocals"</span></pre>
+
+          <table class="field-table">
+            <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+            <tr><td>file</td><td>file</td><td>.wav or .mp3</td></tr>
+            <tr><td>query</td><td>string</td><td>Free-text instruction</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="panel-label">Response <span style="color:var(--muted)">200</span></div>
+          <pre>{
+  <span class="tok-key">"status"</span>: <span class="tok-str">"success"</span>,
+  <span class="tok-key">"session_id"</span>: <span class="tok-str">"a3d2952e-..."</span>,
+  <span class="tok-key">"result"</span>: <span class="tok-str">"Here's what I did to your recording..."</span>,
+  <span class="tok-key">"dsp_performed"</span>: <span class="tok-bool">true</span>,
+  <span class="tok-key">"reasoning"</span>: <span class="tok-str">"Audio file present — defaulting to DSP."</span>,
+  <span class="tok-key">"audio_b64"</span>: <span class="tok-str">"UklGRi...&lt;base64 wav&gt;"</span>,
+  <span class="tok-key">"filename"</span>: <span class="tok-str">"auvia_enhanced_a3d2952e.wav"</span>
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- /orchestrate -->
+    <section class="endpoint" id="orchestrate">
+      <div class="endpoint-header">
+        <span class="method-badge">POST</span>
+        <span class="endpoint-path">/orchestrate</span>
+      </div>
+      <p class="endpoint-desc">Sing &amp; Orchestrate: send a vocal recording, get back an AI-composed instrumental backing track mixed underneath your (DSP-enhanced) vocal — plus the instrumental alone, for remixing.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="panel-label">Request</div>
+          <pre><span class="tok-comment"># multipart/form-data</span>
+curl -X POST https://auviaengine.com/orchestrate \
+  -F <span class="tok-flag">file</span>=@vocal.wav \
+  -F <span class="tok-flag">mood</span>=<span class="tok-str">"warm acoustic ballad"</span></pre>
+
+          <table class="field-table">
+            <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+            <tr><td>file</td><td>file</td><td>.wav, .mp3, .webm, or .ogg</td></tr>
+            <tr><td>mood</td><td>string</td><td>Optional genre/mood hint</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="panel-label">Response <span style="color:var(--muted)">200</span></div>
+          <pre>{
+  <span class="tok-key">"status"</span>: <span class="tok-str">"success"</span>,
+  <span class="tok-key">"music_prompt"</span>: <span class="tok-str">"Warm acoustic ballad, A minor..."</span>,
+  <span class="tok-key">"tempo_bpm"</span>: <span class="tok-num">92.4</span>,
+  <span class="tok-key">"key"</span>: <span class="tok-str">"A minor"</span>,
+  <span class="tok-key">"transcript"</span>: <span class="tok-str">"..."</span>,
+  <span class="tok-key">"language_code"</span>: <span class="tok-str">"en-IN"</span>,
+  <span class="tok-key">"agent_response"</span>: <span class="tok-str">"I've built a warm arrangement..."</span>,
+  <span class="tok-key">"audio_b64"</span>: <span class="tok-str">"...&lt;mixed track&gt;"</span>,
+  <span class="tok-key">"instrumental_b64"</span>: <span class="tok-str">"...&lt;backing only&gt;"</span>,
+  <span class="tok-key">"filename"</span>: <span class="tok-str">"auvia_orchestrated_df879f84.wav"</span>
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- /intelligence -->
+    <section class="endpoint" id="intelligence">
+      <div class="endpoint-header">
+        <span class="method-badge">POST</span>
+        <span class="endpoint-path">/intelligence</span>
+      </div>
+      <p class="endpoint-desc">The differentiator: structured acoustic analysis as JSON, no audio processing, no LLM. Pitch, note, key, tempo, and a 0–100 quality score with concrete recommended-processing tags — built for pipelines, not players.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="panel-label">Request</div>
+          <pre><span class="tok-comment"># multipart/form-data</span>
+curl -X POST https://auviaengine.com/intelligence \
+  -F <span class="tok-flag">file</span>=@vocal.wav</pre>
+
+          <table class="field-table">
+            <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+            <tr><td>file</td><td>file</td><td>.wav or .mp3</td></tr>
+          </table>
+        </div>
+        <div>
+          <div class="panel-label">Response <span style="color:var(--muted)">200</span></div>
+          <pre>{
+  <span class="tok-key">"status"</span>: <span class="tok-str">"success"</span>,
+  <span class="tok-key">"pitch_hz"</span>: <span class="tok-num">261.63</span>,
+  <span class="tok-key">"note"</span>: <span class="tok-str">"C4"</span>,
+  <span class="tok-key">"key"</span>: <span class="tok-str">"C major"</span>,
+  <span class="tok-key">"tempo_bpm"</span>: <span class="tok-num">120.0</span>,
+  <span class="tok-key">"quality_score"</span>: <span class="tok-num">87</span>,
+  <span class="tok-key">"noise_floor_db"</span>: <span class="tok-num">-45.2</span>,
+  <span class="tok-key">"dynamic_range_db"</span>: <span class="tok-num">24.1</span>,
+  <span class="tok-key">"recommended_processing"</span>: [
+    <span class="tok-str">"noise_reduction"</span>,
+    <span class="tok-str">"eq_warmth"</span>
+  ]
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- /ws/voice-agent -->
+    <section class="endpoint" id="voice-agent">
+      <div class="endpoint-header">
+        <span class="method-badge ws">WS</span>
+        <span class="endpoint-path">/ws/voice-agent</span>
+      </div>
+      <p class="endpoint-desc">Real-time conversational voice agent. Stream 16kHz mono PCM16 mic frames continuously; a local VAD-driven turn-taking state machine detects when you stop talking, transcribes, replies, and streams back a spoken response with a per-stage latency breakdown.</p>
+
+      <div class="grid-2">
+        <div>
+          <div class="panel-label">Client → Server</div>
+          <pre><span class="tok-comment">// binary WebSocket frames</span>
+<span class="tok-comment">// raw PCM16 mono, 16000 Hz, any chunk size</span>
+ws.send(int16Array.buffer)</pre>
+        </div>
+        <div>
+          <div class="panel-label">Server → Client <span style="color:var(--muted)">per turn</span></div>
+          <pre>{
+  <span class="tok-key">"type"</span>: <span class="tok-str">"turn"</span>,
+  <span class="tok-key">"transcript"</span>: <span class="tok-str">"..."</span>,
+  <span class="tok-key">"reply_text"</span>: <span class="tok-str">"..."</span>,
+  <span class="tok-key">"audio_b64"</span>: <span class="tok-str">"...&lt;mp3 reply&gt;"</span>,
+  <span class="tok-key">"latency_ms"</span>: {
+    <span class="tok-key">"stt_ms"</span>: <span class="tok-num">405.1</span>,
+    <span class="tok-key">"llm_ms"</span>: <span class="tok-num">574.1</span>,
+    <span class="tok-key">"tts_first_byte_ms"</span>: <span class="tok-num">315.9</span>,
+    <span class="tok-key">"tts_complete_ms"</span>: <span class="tok-num">173.0</span>,
+    <span class="tok-key">"total_ms"</span>: <span class="tok-num">1461.3</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta-card" id="get-key">
+      <h3>Get an API key</h3>
+      <p>Keyed access with rate limits is rolling out soon. Drop your email and you'll be first in line — this opens your mail client, nothing is collected server-side yet.</p>
+      <form class="cta-form" onsubmit="return sendApiKeyRequest(event)">
+        <input type="email" id="api-key-email" placeholder="you@company.com" required>
+        <button type="submit">Request Access</button>
+      </form>
+      <p class="cta-note">Or reach out directly on <a href="https://linkedin.com/in/priyalrathore17">LinkedIn</a>.</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function sendApiKeyRequest(e) {
+    e.preventDefault();
+    const email = document.getElementById('api-key-email').value;
+    const subject = encodeURIComponent('Auvia Engine API access request');
+    const body = encodeURIComponent(`Hi, I'd like early API access to Auvia Engine.\n\nMy email: ${email}`);
+    window.location.href = `mailto:priyalrathore2003@gmail.com?subject=${subject}&body=${body}`;
+    return false;
+  }
+</script>
+
+</body>
+</html>

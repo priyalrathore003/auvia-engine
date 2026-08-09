@@ -117,6 +117,7 @@ def health():
         "graph": "langgraph",
         "formats": ["wav", "mp3", "webm", "ogg"],
         "orchestrate": bool(os.getenv("ELEVENLABS_API_KEY")),
+        "intelligence": True,
     }
 
 
@@ -203,6 +204,29 @@ async def enhance_audio(
 
     except Exception as e:
         logger.exception("enhance-audio error")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/intelligence")
+async def intelligence(
+    file: UploadFile = File(..., description="WAV or MP3 audio file"),
+):
+    """Acoustic intelligence: pitch/note/key/tempo + quality metrics as JSON. No LLM."""
+    ext = get_ext(file)
+
+    try:
+        audio_bytes = await file.read()
+        from intelligence_pipeline import analyze_intelligence
+
+        report = await asyncio.to_thread(analyze_intelligence, audio_bytes, ext)
+
+        return JSONResponse({
+            "status": "success",
+            **report,
+        })
+
+    except Exception as e:
+        logger.exception("intelligence error")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -297,6 +321,22 @@ def serve_frontend():
     if not index.is_file():
         raise HTTPException(status_code=404, detail="Frontend not found")
     return FileResponse(index)
+
+
+@app.get("/api")
+def serve_api_docs():
+    api_docs = STATIC_DIR / "api.html"
+    if not api_docs.is_file():
+        raise HTTPException(status_code=404, detail="API docs not found")
+    return FileResponse(api_docs)
+
+
+@app.get("/studio")
+def serve_studio():
+    studio = STATIC_DIR / "studio.html"
+    if not studio.is_file():
+        raise HTTPException(status_code=404, detail="Studio not found")
+    return FileResponse(studio)
 
 
 if STATIC_DIR.is_dir():

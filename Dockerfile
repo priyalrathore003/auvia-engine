@@ -3,10 +3,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps: librosa (soundfile), MP3 decode (ffmpeg)
+# System deps: librosa (soundfile), MP3 decode (ffmpeg), gcc (webrtcvad C extension build)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     ffmpeg \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # librosa imports pkg_resources at load time
@@ -24,6 +26,7 @@ RUN mkdir -p /tmp/huggingface && python -c "from sentence_transformers import Se
 COPY main.py dsp_pipeline.py langgraph_orchestrator.py rag_storage.py ./
 COPY orchestration_pipeline.py orchestration_graph.py ./
 COPY voice_agent_pipeline.py voice_agent_ws.py ./
+COPY intelligence_pipeline.py ./
 COPY integrations/ integrations/
 COPY static/ static/
 

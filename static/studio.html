@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio — Auvia Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens ── */
+  :root {
+    --bg:          #07070F;
+    --surface:     #0D0D1A;
+    --surface2:    #13132080;
+    --border:      #1E1E35;
+    --accent:      #7C3AED;
+    --accent2:     #4F46E5;
+    --accent-glow: #7C3AED40;
+    --accent-dim:  #2D1B6930;
+    --text:        #E2E2EE;
+    --muted:       #52526B;
+    --success:     #10B981;
+    --error:       #EF4444;
+    --warn:        #F59E0B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grain ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .container {
+    width: 100%;
+    max-width: 720px;
+    padding: 0 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 52px 0 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-text {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text span {
+    color: var(--accent);
+  }
+
+  .tagline {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .card-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* ── Drop zone ── */
+  #drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    background: var(--accent-dim);
+  }
+
+  #drop-zone:hover, #drop-zone.drag-over {
+    border-color: var(--accent);
+    background: #2D1B6945;
+  }
+
+  #drop-zone.has-file {
+    border-style: solid;
+    border-color: var(--accent);
+    padding: 20px 24px;
+  }
+
+  .drop-icon {
+    margin-bottom: 12px;
+  }
+
+  .drop-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .drop-sub span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--accent);
+  }
+
+  #file-input { display: none; }
+
+  /* ── File selected state ── */
+  .file-info {
+    display: none;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .file-info.visible { display: flex; }
+
+  .file-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .file-meta { text-align: left; flex: 1; }
+
+  .file-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+  }
+
+  .file-size {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .file-change {
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    flex-shrink: 0;
+  }
+
+  /* ── Waveform visualizer ── */
+  #waveform-canvas {
+    width: 100%;
+    height: 56px;
+    margin-top: 16px;
+    display: none;
+    border-radius: 6px;
+    opacity: 0.85;
+  }
+
+  #waveform-canvas.visible { display: block; }
+
+  /* ── Query input ── */
+  .query-wrap {
+    position: relative;
+  }
+
+  textarea#query {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: none;
+    height: 80px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea#query::placeholder { color: var(--muted); }
+
+  textarea#query:focus { border-color: var(--accent); }
+
+  #mood-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #mood-input::placeholder { color: var(--muted); }
+
+  #mood-input:focus { border-color: var(--accent); }
+
+  /* ── Mode toggle ── */
+  .mode-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .mode-btn.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .mode-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  /* ── Process button ── */
+  #process-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 0 32px var(--accent-glow);
+  }
+
+  #process-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 0 48px var(--accent-glow);
+  }
+
+  #process-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  #orchestrate-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 0 32px var(--accent-glow);
+  }
+
+  #orchestrate-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 0 48px var(--accent-glow);
+  }
+
+  #orchestrate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Loading bars ── */
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 20px;
+  }
+
+  .bar {
+    width: 3px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 2px;
+    animation: pulse-bar 0.8s ease-in-out infinite;
+  }
+
+  .bar:nth-child(1) { height: 8px;  animation-delay: 0s; }
+  .bar:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+  .bar:nth-child(3) { height: 20px; animation-delay: 0.2s; }
+  .bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+  .bar:nth-child(5) { height: 8px;  animation-delay: 0.4s; }
+
+  @keyframes pulse-bar {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+    50%       { transform: scaleY(1.0); opacity: 1.0; }
+  }
+
+  /* ── Output section ── */
+  #output-section {
+    display: none;
+  }
+
+  #output-section.visible { display: block; }
+
+  .output-card {
+    border-color: var(--success);
+  }
+
+  .result-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+
+  .result-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .badge-green {
+    color: var(--success);
+    border-color: var(--success);
+    background: #10B98115;
+  }
+
+  .badge-purple {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  audio {
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  .download-btn {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1.5px solid var(--success);
+    border-radius: 10px;
+    color: var(--success);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .download-btn:hover {
+    background: #10B98115;
+  }
+
+  /* ── Error ── */
+  .error-box {
+    display: none;
+    background: #EF444415;
+    border: 1px solid var(--error);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--error);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .error-box.visible { display: block; }
+
+  /* ── Footer ── */
+  footer {
+    padding: 24px 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* ── Top-level mode tabs ── */
+  .top-tabs {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 0 24px 20px;
+  }
+
+  .top-tab-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .top-tab-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+
+  /* ── Record zone ── */
+  #record-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0 4px;
+  }
+
+  #record-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    border: 1.5px solid var(--error);
+    background: var(--accent-dim);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #record-btn:hover { background: #EF444415; }
+
+  #record-btn.recording { border-color: var(--error); background: #EF444420; }
+
+  #record-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--error);
+    display: inline-block;
+  }
+
+  #record-btn.recording #record-dot {
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  #record-timer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .record-timer-max { opacity: 0.6; }
+
+  #level-canvas {
+    width: 100%;
+    height: 40px;
+    display: none;
+    border-radius: 6px;
+  }
+
+  #level-canvas.visible { display: block; }
+
+  #vocal-preview {
+    width: 100%;
+    height: 40px;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  .download-btn-secondary {
+    margin-top: 10px;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .download-btn-secondary:hover { background: var(--accent-dim); }
+
+  #orchestrate-output-section { display: none; }
+
+  #orchestrate-output-section.visible { display: block; }
+
+  /* ── Voice Agent ── */
+  #va-controls button {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1.5px solid var(--accent);
+    background: var(--accent-dim);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  #va-controls button:hover:not(:disabled) { background: #2D1B6945; }
+
+  #va-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #va-stop-btn { border-color: var(--error); }
+
+  #va-status {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  #va-status.live { color: var(--success); }
+
+  #va-audio-player {
+    width: 100%;
+    height: 40px;
+    margin: 12px 0;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  #va-latency-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  #va-latency-table th, #va-latency-table td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #va-latency-table th { color: var(--muted); font-weight: 500; }
+
+  #va-latency-table td.total { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <svg class="logo-mark" viewBox="0 0 36 36" fill="none">
+        <rect width="36" height="36" rx="10" fill="#7C3AED22"/>
+        <rect x="7" y="20" width="4" height="9" rx="2" fill="#7C3AED"/>
+        <rect x="14" y="14" width="4" height="15" rx="2" fill="#A78BFA"/>
+        <rect x="21" y="9" width="4" height="20" rx="2" fill="#7C3AED"/>
+        <rect x="28" y="16" width="4" height="13" rx="2" fill="#A78BFA"/>
+      </svg>
+      <span class="logo-text">Auvia<span> Engine</span></span>
+    </div>
+    <p class="tagline">AI Audio Intelligence · LangGraph · RAG · DSP</p>
+  </header>
+
+  <!-- Top-level mode tabs -->
+  <div class="top-tabs">
+    <button class="top-tab-btn active" id="tab-enhance" onclick="setTab('enhance')">Enhance Audio</button>
+    <button class="top-tab-btn" id="tab-orchestrate" onclick="setTab('orchestrate')">Sing &amp; Orchestrate</button>
+    <button class="top-tab-btn" id="tab-voice-agent" onclick="setTab('voice-agent')">Voice Agent</button>
+  </div>
+
+  <div id="enhance-flow">
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-label">01 · Upload Audio</div>
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <input type="file" id="file-input" accept=".wav,.mp3,audio/wav,audio/mpeg">
+
+      <!-- Empty state -->
+      <div id="empty-state">
+        <div class="drop-icon">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="19" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <path d="M20 26V14M14 20l6-6 6 6" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="drop-title">Drop your audio here</div>
+        <div class="drop-sub">or click to browse &nbsp;·&nbsp; <span>.wav</span> &nbsp;<span>.mp3</span></div>
+      </div>
+
+      <!-- File selected state -->
+      <div class="file-info" id="file-info">
+        <div class="file-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 3v7m0 0l-3-3m3 3l3-3" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="file-meta">
+          <div class="file-name" id="file-name">filename.wav</div>
+          <div class="file-size" id="file-size">0 KB</div>
+        </div>
+        <span class="file-change" onclick="event.stopPropagation(); resetFile()">Change</span>
+      </div>
+    </div>
+
+    <!-- Waveform visualizer -->
+    <canvas id="waveform-canvas"></canvas>
+  </div>
+
+  <!-- Query -->
+  <div class="card">
+    <div class="card-label">02 · Instruction</div>
+    <div class="query-wrap">
+      <textarea id="query" placeholder="e.g. Remove background noise and enhance the vocals for a podcast recording...">Enhance this audio — remove background noise, warm up the low-mids, and lift the vocal presence.</textarea>
+    </div>
+  </div>
+
+  <!-- Mode -->
+  <div class="card">
+    <div class="card-label">03 · Processing Mode</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-agent" onclick="setMode('agent')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M4.5 7h5M7 4.5v5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        AI Agent
+      </button>
+      <button class="mode-btn" id="btn-dsp" onclick="setMode('dsp')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="9" width="2" height="4" rx="1" fill="currentColor"/>
+          <rect x="4.5" y="6" width="2" height="7" rx="1" fill="currentColor"/>
+          <rect x="8" y="3" width="2" height="10" rx="1" fill="currentColor"/>
+          <rect x="11.5" y="7" width="2" height="6" rx="1" fill="currentColor"/>
+        </svg>
+        DSP Only
+      </button>
+    </div>
+    <p class="mode-desc" id="mode-desc">
+      <strong style="color: var(--text)">AI Agent</strong> — LangGraph queries the audio knowledge base (RAG), reasons about the best processing approach, then runs the DSP pipeline.
+    </p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Process -->
+  <button id="process-btn" onclick="processAudio()" disabled>
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <polygon points="6,3 15,9 6,15" fill="white"/>
+    </svg>
+    Process Audio
+  </button>
+
+  <!-- Output -->
+  <div id="output-section">
+    <div style="height: 20px"></div>
+    <div class="card output-card">
+      <div class="card-label">Output</div>
+
+      <div class="result-meta" id="result-meta"></div>
+      <div class="result-text" id="result-text"></div>
+
+      <audio id="output-player" controls></audio>
+
+      <button class="download-btn" id="download-btn" onclick="downloadAudio()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Download Enhanced Audio
+      </button>
+    </div>
+  </div>
+
+  </div><!-- /enhance-flow -->
+
+  <div id="orchestrate-flow" style="display:none">
+
+    <!-- Record -->
+    <div class="card">
+      <div class="card-label">01 · Record Your Vocals</div>
+      <div id="record-zone">
+        <button id="record-btn" onclick="toggleRecording()">
+          <span id="record-dot"></span>
+          <span id="record-label">Start Recording</span>
+        </button>
+        <div id="record-timer">0:00 <span class="record-timer-max">/ 1:00</span></div>
+        <canvas id="level-canvas"></canvas>
+        <audio id="vocal-preview" controls style="display:none"></audio>
+      </div>
+    </div>
+
+    <!-- Mood -->
+    <div class="card">
+      <div class="card-label">02 · Mood / Genre (optional)</div>
+      <div class="query-wrap">
+        <input type="text" id="mood-input" placeholder="e.g. warm acoustic ballad, upbeat pop, lo-fi hip-hop... leave blank to let Auvia decide">
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="orchestrate-error-box"></div>
+
+    <!-- Generate -->
+    <button id="orchestrate-btn" onclick="generateOrchestration()" disabled>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <polygon points="6,3 15,9 6,15" fill="white"/>
+      </svg>
+      Generate Orchestration
+    </button>
+
+    <!-- Output -->
+    <div id="orchestrate-output-section">
+      <div style="height: 20px"></div>
+      <div class="card output-card">
+        <div class="card-label">Output</div>
+
+        <div class="result-meta" id="orchestrate-result-meta"></div>
+        <div class="result-text" id="orchestrate-transcript" style="display:none"></div>
+        <div class="result-text" id="orchestrate-result-text"></div>
+
+        <audio id="orchestrate-output-player" controls></audio>
+
+        <button class="download-btn" id="download-mix-btn" onclick="downloadOrchestrated()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Download Mix
+        </button>
+        <button class="download-btn download-btn-secondary" id="download-instrumental-btn" onclick="downloadInstrumental()" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Download Instrumental Only
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /orchestrate-flow -->
+
+  <div id="voice-agent-flow" style="display:none">
+
+    <!-- Session -->
+    <div class="card">
+      <div class="card-label">Real-Time Voice Agent</div>
+      <p class="mode-desc" style="margin-top:0">
+        Cascaded pipeline: local VAD detects when you stop talking → Sarvam STT →
+        LLM reply → ElevenLabs TTS. Every turn's latency is measured and shown below.
+      </p>
+      <div id="va-controls" style="display:flex; gap:10px; margin-top:16px">
+        <button id="va-start-btn" onclick="startVoiceSession()">Start Conversation</button>
+        <button id="va-stop-btn" onclick="stopVoiceSession()" disabled>End Conversation</button>
+      </div>
+      <div id="va-status">Not connected</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="va-error-box"></div>
+
+    <!-- Live turn -->
+    <div class="card" id="va-turn-card" style="display:none">
+      <div class="card-label">Latest Turn</div>
+      <div class="result-text" id="va-transcript"></div>
+      <div class="result-text" id="va-reply"></div>
+      <audio id="va-audio-player" controls></audio>
+
+      <table id="va-latency-table">
+        <thead>
+          <tr><th>Stage</th><th>ms</th></tr>
+        </thead>
+        <tbody id="va-latency-body"></tbody>
+      </table>
+    </div>
+
+  </div><!-- /voice-agent-flow -->
+
+  <footer>
+    <a href="/">← Auvia Engine</a> &nbsp;·&nbsp;
+    Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a> &nbsp;·&nbsp;
+    <a href="/api">API Docs</a> &nbsp;·&nbsp;
+    <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let selectedFile = null;
+  let currentMode  = 'agent';
+  let outputBlob   = null;
+  let outputName   = 'auvia_enhanced.wav';
+
+  // Auto-detect API base URL
+  const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8080'
+    : window.location.origin;
+
+  // ── File handling ──────────────────────────────────────────────────────────
+  const dropZone     = document.getElementById('drop-zone');
+  const fileInput    = document.getElementById('file-input');
+  const emptyState   = document.getElementById('empty-state');
+  const fileInfo     = document.getElementById('file-info');
+  const fileNameEl   = document.getElementById('file-name');
+  const fileSizeEl   = document.getElementById('file-size');
+  const processBtn   = document.getElementById('process-btn');
+  const canvas       = document.getElementById('waveform-canvas');
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  function handleFile(file) {
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+    emptyState.style.display = 'none';
+    fileInfo.classList.add('visible');
+    dropZone.classList.add('has-file');
+    processBtn.disabled = false;
+    hideError();
+    drawWaveform(file);
+  }
+
+  function resetFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    emptyState.style.display = '';
+    fileInfo.classList.remove('visible');
+    dropZone.classList.remove('has-file');
+    processBtn.disabled = true;
+    canvas.classList.remove('visible');
+    document.getElementById('output-section').classList.remove('visible');
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
+  }
+
+  // ── Waveform preview ───────────────────────────────────────────────────────
+  async function drawWaveform(file) {
+    try {
+      const ctx  = new AudioContext();
+      const buf  = await file.arrayBuffer();
+      const data = await ctx.decodeAudioData(buf);
+      const ch   = data.getChannelData(0);
+      const w    = canvas.offsetWidth * 2;
+      const h    = 112;
+      canvas.width  = w;
+      canvas.height = h;
+      const c    = canvas.getContext('2d');
+      const step = Math.ceil(ch.length / (w / 2));
+      const mid  = h / 2;
+      c.clearRect(0, 0, w, h);
+
+      const grad = c.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0,   '#4F46E5');
+      grad.addColorStop(0.5, '#7C3AED');
+      grad.addColorStop(1,   '#4F46E5');
+      c.strokeStyle = grad;
+      c.lineWidth = 1.5;
+      c.beginPath();
+
+      for (let i = 0; i < w / 2; i++) {
+        let max = 0;
+        for (let j = 0; j < step; j++) {
+          const val = Math.abs(ch[i * step + j] || 0);
+          if (val > max) max = val;
+        }
+        const amp = max * (mid - 4);
+        c.moveTo(i * 2, mid - amp);
+        c.lineTo(i * 2, mid + amp);
+      }
+      c.stroke();
+      canvas.classList.add('visible');
+      await ctx.close();
+    } catch(e) {
+      // MP3 decode may fail on some browsers — silently skip
+    }
+  }
+
+  // ── Mode toggle ────────────────────────────────────────────────────────────
+  const modeDescriptions = {
+    agent: '<strong style="color: var(--text)">AI Agent</strong> — LangGraph queries the audio knowledge base (RAG), reasons about the best processing approach, then runs the DSP pipeline.',
+    dsp:   '<strong style="color: var(--text)">DSP Only</strong> — Directly runs the signal processing pipeline: noise reduction → spectral EQ → peak normalization. No LLM required.',
+  };
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.getElementById('btn-agent').classList.toggle('active', mode === 'agent');
+    document.getElementById('btn-dsp').classList.toggle('active',   mode === 'dsp');
+    document.getElementById('mode-desc').innerHTML = modeDescriptions[mode];
+  }
+
+  // ── Process ────────────────────────────────────────────────────────────────
+  async function processAudio() {
+    if (!selectedFile) return;
+    hideError();
+    setLoading(true);
+    document.getElementById('output-section').classList.remove('visible');
+
+    try {
+      const form = new FormData();
+      form.append('file', selectedFile);
+      if (currentMode === 'agent') {
+        form.append('query', document.getElementById('query').value);
+      }
+
+      const endpoint = currentMode === 'agent' ? '/process-audio' : '/enhance-audio';
+      const res = await fetch(API_BASE + endpoint, { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Processing failed');
+      if (data.status !== 'success') throw new Error(data.result || 'Unknown error');
+
+      showOutput(data);
+
+    } catch(err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function setLoading(loading) {
+    const btn = document.getElementById('process-btn');
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = `
+        <div class="bars">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          <div class="bar"></div><div class="bar"></div>
+        </div>
+        Processing…`;
+    } else {
+      btn.disabled = !selectedFile;
+      btn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <polygon points="6,3 15,9 6,15" fill="white"/>
+        </svg>
+        Process Audio`;
+    }
+  }
+
+  // ── Output ─────────────────────────────────────────────────────────────────
+  function showOutput(data) {
+    // Decode audio
+    const bytes  = atob(data.audio_b64);
+    const arr    = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    outputBlob  = new Blob([arr], { type: 'audio/wav' });
+    outputName  = data.filename || 'auvia_enhanced.wav';
+
+    // Player
+    const player = document.getElementById('output-player');
+    player.src   = URL.createObjectURL(outputBlob);
+
+    // Badges
+    const meta = document.getElementById('result-meta');
+    meta.innerHTML = '';
+    if (data.dsp_performed) {
+      meta.innerHTML += '<span class="badge badge-green">✓ DSP Applied</span>';
+    }
+    if (currentMode === 'agent') {
+      meta.innerHTML += '<span class="badge badge-purple">⬡ LangGraph</span>';
+      meta.innerHTML += '<span class="badge badge-purple">◉ RAG</span>';
+    }
+
+    // Agent response text
+    const resultEl = document.getElementById('result-text');
+    resultEl.style.display = data.result ? '' : 'none';
+    resultEl.textContent = data.result || '';
+
+    document.getElementById('output-section').classList.add('visible');
+    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function downloadAudio() {
+    if (!outputBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outputBlob);
+    a.download = outputName;
+    a.click();
+  }
+
+  // ── Error ──────────────────────────────────────────────────────────────────
+  function showError(msg) {
+    const el = document.getElementById('error-box');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideError() {
+    document.getElementById('error-box').classList.remove('visible');
+  }
+
+  // ── Top-level tabs ─────────────────────────────────────────────────────────
+  function setTab(tab) {
+    document.getElementById('tab-enhance').classList.toggle('active', tab === 'enhance');
+    document.getElementById('tab-orchestrate').classList.toggle('active', tab === 'orchestrate');
+    document.getElementById('tab-voice-agent').classList.toggle('active', tab === 'voice-agent');
+    document.getElementById('enhance-flow').style.display = tab === 'enhance' ? '' : 'none';
+    document.getElementById('orchestrate-flow').style.display = tab === 'orchestrate' ? '' : 'none';
+    document.getElementById('voice-agent-flow').style.display = tab === 'voice-agent' ? '' : 'none';
+    if (tab !== 'voice-agent') stopVoiceSession();
+  }
+
+  // ── Sing & Orchestrate: recording ─────────────────────────────────────────
+  const MAX_RECORD_SECONDS = 60;
+
+  let mediaRecorder   = null;
+  let mediaStream     = null;
+  let recordedChunks  = [];
+  let recordedBlob    = null;
+  let recordTimerId   = null;
+  let recordSeconds   = 0;
+  let audioCtx        = null;
+  let analyser        = null;
+  let levelAnimId     = null;
+
+  const recordBtn     = document.getElementById('record-btn');
+  const recordLabel   = document.getElementById('record-label');
+  const recordTimerEl = document.getElementById('record-timer');
+  const levelCanvas   = document.getElementById('level-canvas');
+  const vocalPreview  = document.getElementById('vocal-preview');
+  const orchestrateBtn = document.getElementById('orchestrate-btn');
+
+  async function toggleRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      stopRecording();
+    } else {
+      await startRecording();
+    }
+  }
+
+  async function startRecording() {
+    hideOrchestrateError();
+    document.getElementById('orchestrate-output-section').classList.remove('visible');
+
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      showOrchestrateError('Microphone access denied or unavailable: ' + err.message);
+      return;
+    }
+
+    recordedChunks = [];
+    recordedBlob = null;
+    mediaRecorder = new MediaRecorder(mediaStream);
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      recordedBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+      vocalPreview.src = URL.createObjectURL(recordedBlob);
+      vocalPreview.style.display = 'block';
+      orchestrateBtn.disabled = false;
+      stopLevelMeter();
+      mediaStream.getTracks().forEach(t => t.stop());
+    };
+
+    mediaRecorder.start();
+    recordBtn.classList.add('recording');
+    recordLabel.textContent = 'Stop Recording';
+    recordSeconds = 0;
+    updateRecordTimer();
+    recordTimerId = setInterval(() => {
+      recordSeconds++;
+      updateRecordTimer();
+      if (recordSeconds >= MAX_RECORD_SECONDS) stopRecording();
+    }, 1000);
+
+    startLevelMeter(mediaStream);
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    clearInterval(recordTimerId);
+    recordBtn.classList.remove('recording');
+    recordLabel.textContent = 'Start Recording';
+  }
+
+  function updateRecordTimer() {
+    const m = Math.floor(recordSeconds / 60);
+    const s = String(recordSeconds % 60).padStart(2, '0');
+    recordTimerEl.innerHTML = `${m}:${s} <span class="record-timer-max">/ 1:00</span>`;
+  }
+
+  function startLevelMeter(stream) {
+    audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+
+    levelCanvas.classList.add('visible');
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function draw() {
+      levelAnimId = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(data);
+
+      const w = levelCanvas.offsetWidth * 2;
+      const h = 80;
+      levelCanvas.width = w;
+      levelCanvas.height = h;
+      const c = levelCanvas.getContext('2d');
+      c.clearRect(0, 0, w, h);
+
+      const barCount = 40;
+      const barWidth = w / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const value = data[Math.floor(i * data.length / barCount)] / 255;
+        const barHeight = value * h;
+        c.fillStyle = '#7C3AED';
+        c.fillRect(i * barWidth, h - barHeight, barWidth * 0.7, barHeight);
+      }
+    }
+    draw();
+  }
+
+  function stopLevelMeter() {
+    if (levelAnimId) cancelAnimationFrame(levelAnimId);
+    if (audioCtx) audioCtx.close();
+    levelCanvas.classList.remove('visible');
+  }
+
+  // ── Sing & Orchestrate: generate ──────────────────────────────────────────
+  let orchestratedMixBlob = null;
+  let orchestratedMixName = 'auvia_orchestrated.wav';
+  let orchestratedInstrumentalBlob = null;
+  let orchestratedInstrumentalName = 'auvia_instrumental.mp3';
+
+  async function generateOrchestration() {
+    if (!recordedBlob) return;
+    hideOrchestrateError();
+    setOrchestrateLoading(true);
+    document.getElementById('orchestrate-output-section').classList.remove('visible');
+
+    try {
+      const form = new FormData();
+      form.append('file', recordedBlob, 'vocal.webm');
+      form.append('mood', document.getElementById('mood-input').value);
+
+      const res = await fetch(API_BASE + '/orchestrate', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || 'Orchestration failed');
+      if (data.status !== 'success') throw new Error(data.result || 'Unknown error');
+
+      showOrchestrateOutput(data);
+
+    } catch (err) {
+      showOrchestrateError(err.message);
+    } finally {
+      setOrchestrateLoading(false);
+    }
+  }
+
+  function setOrchestrateLoading(loading) {
+    if (loading) {
+      orchestrateBtn.disabled = true;
+      orchestrateBtn.innerHTML = `
+        <div class="bars">
+          <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          <div class="bar"></div><div class="bar"></div>
+        </div>
+        Composing…`;
+    } else {
+      orchestrateBtn.disabled = !recordedBlob;
+      orchestrateBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <polygon points="6,3 15,9 6,15" fill="white"/>
+        </svg>
+        Generate Orchestration`;
+    }
+  }
+
+  function b64ToBlob(b64, type) {
+    const bytes = atob(b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return new Blob([arr], { type });
+  }
+
+  function showOrchestrateOutput(data) {
+    orchestratedMixBlob = data.audio_b64 ? b64ToBlob(data.audio_b64, 'audio/wav') : null;
+    orchestratedMixName = data.filename || 'auvia_orchestrated.wav';
+
+    const player = document.getElementById('orchestrate-output-player');
+    if (orchestratedMixBlob) player.src = URL.createObjectURL(orchestratedMixBlob);
+
+    const instrumentalBtn = document.getElementById('download-instrumental-btn');
+    if (data.instrumental_b64) {
+      orchestratedInstrumentalBlob = b64ToBlob(data.instrumental_b64, 'audio/mpeg');
+      orchestratedInstrumentalName = `auvia_instrumental_${(data.session_id || '').slice(0, 8)}.mp3`;
+      instrumentalBtn.style.display = '';
+    } else {
+      orchestratedInstrumentalBlob = null;
+      instrumentalBtn.style.display = 'none';
+    }
+
+    const meta = document.getElementById('orchestrate-result-meta');
+    meta.innerHTML = '';
+    if (data.tempo_bpm) meta.innerHTML += `<span class="badge badge-purple">♩ ${data.tempo_bpm} BPM</span>`;
+    if (data.key) meta.innerHTML += `<span class="badge badge-purple">♪ ${data.key}</span>`;
+    if (data.language_code) meta.innerHTML += `<span class="badge badge-green">${data.language_code}</span>`;
+
+    const transcriptEl = document.getElementById('orchestrate-transcript');
+    transcriptEl.style.display = data.transcript ? '' : 'none';
+    transcriptEl.textContent = data.transcript ? '"' + data.transcript + '"' : '';
+
+    const resultEl = document.getElementById('orchestrate-result-text');
+    resultEl.style.display = data.agent_response ? '' : 'none';
+    resultEl.textContent = data.agent_response || '';
+
+    document.getElementById('orchestrate-output-section').classList.add('visible');
+    document.getElementById('orchestrate-output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function downloadOrchestrated() {
+    if (!orchestratedMixBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(orchestratedMixBlob);
+    a.download = orchestratedMixName;
+    a.click();
+  }
+
+  function downloadInstrumental() {
+    if (!orchestratedInstrumentalBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(orchestratedInstrumentalBlob);
+    a.download = orchestratedInstrumentalName;
+    a.click();
+  }
+
+  function showOrchestrateError(msg) {
+    const el = document.getElementById('orchestrate-error-box');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideOrchestrateError() {
+    document.getElementById('orchestrate-error-box').classList.remove('visible');
+  }
+
+  // ── Voice Agent: real-time conversation ───────────────────────────────────
+  let vaWs           = null;
+  let vaAudioCtx      = null;
+  let vaMediaStream   = null;
+  let vaProcessorNode = null;
+
+  const vaStartBtn = document.getElementById('va-start-btn');
+  const vaStopBtn  = document.getElementById('va-stop-btn');
+  const vaStatusEl = document.getElementById('va-status');
+
+  function vaSetStatus(text, live) {
+    vaStatusEl.textContent = text;
+    vaStatusEl.classList.toggle('live', !!live);
+  }
+
+  function showVaError(msg) {
+    const el = document.getElementById('va-error-box');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('visible');
+  }
+
+  function hideVaError() {
+    document.getElementById('va-error-box').classList.remove('visible');
+  }
+
+  async function startVoiceSession() {
+    if (vaWs) return;
+    hideVaError();
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      showVaError('Microphone access denied or unavailable: ' + err.message);
+      return;
+    }
+    vaMediaStream = stream;
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = API_BASE.replace(/^https?:/, wsProtocol);
+    vaWs = new WebSocket(wsBase + '/ws/voice-agent');
+    vaWs.binaryType = 'arraybuffer';
+
+    vaWs.onopen = () => {
+      vaSetStatus('Connected — listening…', true);
+      vaStartBtn.disabled = true;
+      vaStopBtn.disabled = false;
+
+      vaAudioCtx = new AudioContext({ sampleRate: 16000 });
+      const source = vaAudioCtx.createMediaStreamSource(stream);
+      vaProcessorNode = vaAudioCtx.createScriptProcessor(4096, 1, 1);
+
+      vaProcessorNode.onaudioprocess = e => {
+        if (!vaWs || vaWs.readyState !== WebSocket.OPEN) return;
+        const float32 = e.inputBuffer.getChannelData(0);
+        const int16 = new Int16Array(float32.length);
+        for (let i = 0; i < float32.length; i++) {
+          const s = Math.max(-1, Math.min(1, float32[i]));
+          int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        vaWs.send(int16.buffer);
+      };
+
+      source.connect(vaProcessorNode);
+      vaProcessorNode.connect(vaAudioCtx.destination);
+    };
+
+    vaWs.onmessage = event => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'error') {
+        showVaError(data.message);
+        return;
+      }
+      if (data.type === 'turn') showVaTurn(data);
+    };
+
+    vaWs.onerror = () => showVaError('Voice agent connection error.');
+
+    vaWs.onclose = () => {
+      vaSetStatus('Not connected');
+      vaWs = null;
+      vaStartBtn.disabled = false;
+      vaStopBtn.disabled = true;
+    };
+  }
+
+  function stopVoiceSession() {
+    if (vaProcessorNode) { vaProcessorNode.disconnect(); vaProcessorNode = null; }
+    if (vaAudioCtx) { vaAudioCtx.close(); vaAudioCtx = null; }
+    if (vaMediaStream) { vaMediaStream.getTracks().forEach(t => t.stop()); vaMediaStream = null; }
+    if (vaWs) { vaWs.close(); vaWs = null; }
+    vaStartBtn.disabled = false;
+    vaStopBtn.disabled = true;
+    vaSetStatus('Not connected');
+  }
+
+  function showVaTurn(data) {
+    document.getElementById('va-turn-card').style.display = '';
+    vaSetStatus('Listening…', true);
+
+    const transcriptEl = document.getElementById('va-transcript');
+    transcriptEl.textContent = data.transcript ? '"' + data.transcript + '"' : (data.note || '');
+
+    const replyEl = document.getElementById('va-reply');
+    replyEl.textContent = data.reply_text || '';
+    replyEl.style.display = data.reply_text ? '' : 'none';
+
+    const player = document.getElementById('va-audio-player');
+    if (data.audio_b64) {
+      const blob = b64ToBlob(data.audio_b64, 'audio/mpeg');
+      player.src = URL.createObjectURL(blob);
+      player.play().catch(() => {});
+    }
+
+    const body = document.getElementById('va-latency-body');
+    body.innerHTML = '';
+    const latency = data.latency_ms || {};
+    for (const [stage, ms] of Object.entries(latency)) {
+      if (stage === 'total_ms') continue;
+      body.innerHTML += `<tr><td>${stage}</td><td>${ms}</td></tr>`;
+    }
+    if ('total_ms' in latency) {
+      body.innerHTML += `<tr><td class="total">total</td><td class="total">${latency.total_ms}</td></tr>`;
+    }
+  }
+</script>
+</body>
+</html>

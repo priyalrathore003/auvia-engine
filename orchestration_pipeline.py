@@ -25,7 +25,7 @@ _BACKING_GAIN_DB = -6.0
 _TARGET_PEAK_DBFS = -1.0
 
 
-def _load_from_bytes(audio_bytes: bytes, ext: str, sr=None, duration=None, mono=True):
+def load_audio_from_bytes(audio_bytes: bytes, ext: str, sr=None, duration=None, mono=True):
     suffix = f".{ext.lower().replace('audio/', '')}" or ".wav"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(audio_bytes)
@@ -51,7 +51,7 @@ def _peak_normalize(y: np.ndarray, target_dbfs: float = _TARGET_PEAK_DBFS) -> np
     return y
 
 
-def _estimate_key(y: np.ndarray, sr: int) -> str:
+def estimate_key(y: np.ndarray, sr: int) -> str:
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
     chroma_mean = chroma.mean(axis=1)
 
@@ -80,13 +80,13 @@ def analyze_vocal(audio_bytes: bytes, ext: str) -> dict:
     Analyzes a vocal recording for tempo, musical key, and duration.
     Returns {"tempo_bpm": float, "key": str, "duration_sec": float}.
     """
-    y, sr = _load_from_bytes(audio_bytes, ext, sr=None, mono=True)
+    y, sr = load_audio_from_bytes(audio_bytes, ext, sr=None, mono=True)
     duration_sec = librosa.get_duration(y=y, sr=sr)
 
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
     tempo_bpm = float(np.atleast_1d(tempo)[0])
 
-    key = _estimate_key(y, sr)
+    key = estimate_key(y, sr)
 
     logger.info(
         "[ANALYZE] tempo=%.1f bpm | key=%s | duration=%.1fs",
@@ -97,7 +97,7 @@ def analyze_vocal(audio_bytes: bytes, ext: str) -> dict:
 
 def trim_audio_bytes(audio_bytes: bytes, ext: str, max_seconds: float) -> bytes:
     """Trims audio to at most max_seconds and re-encodes as WAV (used before Sarvam STT)."""
-    y, sr = _load_from_bytes(audio_bytes, ext, sr=None, duration=max_seconds, mono=True)
+    y, sr = load_audio_from_bytes(audio_bytes, ext, sr=None, duration=max_seconds, mono=True)
     return _to_wav_bytes(y, sr)
 
 
@@ -110,8 +110,8 @@ def mix_vocal_with_backing(
     the vocal's duration, gain-staged under the vocal, and peak-normalized.
     Returns mixed WAV bytes.
     """
-    vocal, sr = _load_from_bytes(vocal_bytes, vocal_ext, sr=None, mono=True)
-    backing, backing_sr = _load_from_bytes(backing_bytes, backing_ext, sr=None, mono=True)
+    vocal, sr = load_audio_from_bytes(vocal_bytes, vocal_ext, sr=None, mono=True)
+    backing, backing_sr = load_audio_from_bytes(backing_bytes, backing_ext, sr=None, mono=True)
 
     if backing_sr != sr:
         backing = librosa.resample(backing, orig_sr=backing_sr, target_sr=sr)

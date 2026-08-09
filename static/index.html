@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auvia Engine</title>
+<title>Auvia Engine — Audio Intelligence Infrastructure</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* ── Tokens ── */
   :root {
     --bg:          #07070F;
     --surface:     #0D0D1A;
@@ -31,1303 +30,676 @@
     color: var(--text);
     font-family: 'Inter', sans-serif;
     font-size: 15px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    line-height: 1.6;
     overflow-x: hidden;
   }
 
-  /* ── Background grain ── */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
     pointer-events: none;
     z-index: 0;
   }
 
-  /* ── Layout ── */
-  .container {
-    width: 100%;
-    max-width: 720px;
-    padding: 0 24px 80px;
-    position: relative;
-    z-index: 1;
-  }
+  a { color: var(--accent); text-decoration: none; }
 
-  /* ── Header ── */
-  header {
-    padding: 52px 0 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    text-align: center;
-  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
 
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.01em; }
 
-  .logo-mark {
-    width: 36px;
-    height: 36px;
-  }
-
-  .logo-text {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
-    color: var(--text);
-  }
-
-  .logo-text span {
-    color: var(--accent);
-  }
-
-  .tagline {
-    font-size: 13px;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    font-weight: 400;
-  }
-
-  /* ── Card ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 16px;
-  }
-
-  .card-label {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 14px;
-  }
-
-  /* ── Drop zone ── */
-  #drop-zone {
-    border: 1.5px dashed var(--border);
-    border-radius: 12px;
-    padding: 36px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-    background: var(--accent-dim);
-  }
-
-  #drop-zone:hover, #drop-zone.drag-over {
-    border-color: var(--accent);
-    background: #2D1B6945;
-  }
-
-  #drop-zone.has-file {
-    border-style: solid;
-    border-color: var(--accent);
-    padding: 20px 24px;
-  }
-
-  .drop-icon {
-    margin-bottom: 12px;
-  }
-
-  .drop-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    margin-bottom: 6px;
-  }
-
-  .drop-sub {
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .drop-sub span {
+  code {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-size: 0.85em;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: 1px 6px;
-    color: var(--accent);
   }
 
-  #file-input { display: none; }
-
-  /* ── File selected state ── */
-  .file-info {
-    display: none;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .file-info.visible { display: flex; }
-
-  .file-icon {
-    width: 40px;
-    height: 40px;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
+  /* ── Nav ── */
+  header.topnav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .file-meta { text-align: left; flex: 1; }
-
-  .file-name {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 320px;
-  }
-
-  .file-size {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .file-change {
-    font-size: 12px;
-    color: var(--accent);
-    cursor: pointer;
-    text-decoration: underline;
-    flex-shrink: 0;
-  }
-
-  /* ── Waveform visualizer ── */
-  #waveform-canvas {
-    width: 100%;
-    height: 56px;
-    margin-top: 16px;
-    display: none;
-    border-radius: 6px;
-    opacity: 0.85;
-  }
-
-  #waveform-canvas.visible { display: block; }
-
-  /* ── Query input ── */
-  .query-wrap {
-    position: relative;
-  }
-
-  textarea#query {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: none;
-    height: 80px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  textarea#query::placeholder { color: var(--muted); }
-
-  textarea#query:focus { border-color: var(--accent); }
-
-  #mood-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  #mood-input::placeholder { color: var(--muted); }
-
-  #mood-input:focus { border-color: var(--accent); }
-
-  /* ── Mode toggle ── */
-  .mode-toggle {
-    display: flex;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-    gap: 4px;
-  }
-
-  .mode-btn {
-    flex: 1;
-    padding: 10px 16px;
-    border-radius: 7px;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .mode-btn.active {
-    background: var(--accent);
-    color: #fff;
-  }
-
-  .mode-desc {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 10px;
-    line-height: 1.5;
-  }
-
-  /* ── Process button ── */
-  #process-btn {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none;
-    border-radius: 12px;
-    color: #fff;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 0 32px var(--accent-glow);
-  }
-
-  #process-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 0 48px var(--accent-glow);
-  }
-
-  #process-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  #orchestrate-btn {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border: none;
-    border-radius: 12px;
-    color: #fff;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    box-shadow: 0 0 32px var(--accent-glow);
-  }
-
-  #orchestrate-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 0 48px var(--accent-glow);
-  }
-
-  #orchestrate-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* ── Loading bars ── */
-  .bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 20px;
-  }
-
-  .bar {
-    width: 3px;
-    background: rgba(255,255,255,0.8);
-    border-radius: 2px;
-    animation: pulse-bar 0.8s ease-in-out infinite;
-  }
-
-  .bar:nth-child(1) { height: 8px;  animation-delay: 0s; }
-  .bar:nth-child(2) { height: 14px; animation-delay: 0.1s; }
-  .bar:nth-child(3) { height: 20px; animation-delay: 0.2s; }
-  .bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
-  .bar:nth-child(5) { height: 8px;  animation-delay: 0.4s; }
-
-  @keyframes pulse-bar {
-    0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
-    50%       { transform: scaleY(1.0); opacity: 1.0; }
-  }
-
-  /* ── Output section ── */
-  #output-section {
-    display: none;
-  }
-
-  #output-section.visible { display: block; }
-
-  .output-card {
-    border-color: var(--success);
-  }
-
-  .result-text {
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--text);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    font-style: italic;
-  }
-
-  .result-meta {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-
-  .badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    border: 1px solid;
-  }
-
-  .badge-green {
-    color: var(--success);
-    border-color: var(--success);
-    background: #10B98115;
-  }
-
-  .badge-purple {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: var(--accent-dim);
-  }
-
-  audio {
-    width: 100%;
-    height: 40px;
-    border-radius: 8px;
-    margin-bottom: 14px;
-    accent-color: var(--accent);
-    filter: invert(1) hue-rotate(200deg) saturate(0.6);
-  }
-
-  .download-btn {
-    width: 100%;
-    padding: 13px;
-    background: transparent;
-    border: 1.5px solid var(--success);
-    border-radius: 10px;
-    color: var(--success);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .download-btn:hover {
-    background: #10B98115;
-  }
-
-  /* ── Error ── */
-  .error-box {
-    display: none;
-    background: #EF444415;
-    border: 1px solid var(--error);
-    border-radius: 10px;
-    padding: 14px 16px;
-    color: var(--error);
-    font-size: 13px;
-    line-height: 1.6;
-    margin-bottom: 16px;
-  }
-
-  .error-box.visible { display: block; }
-
-  /* ── Footer ── */
-  footer {
-    padding: 24px 0;
-    text-align: center;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  footer a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  /* ── Divider ── */
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 20px 0;
-  }
-
-  /* ── Top-level mode tabs ── */
-  .top-tabs {
-    width: 100%;
-    max-width: 720px;
-    display: flex;
-    gap: 4px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 4px;
-    margin: 0 24px 20px;
-  }
-
-  .top-tab-btn {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: 9px;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .top-tab-btn.active {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
-  }
-
-  /* ── Record zone ── */
-  #record-zone {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 0 4px;
-  }
-
-  #record-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 28px;
-    border-radius: 999px;
-    border: 1.5px solid var(--error);
-    background: var(--accent-dim);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  #record-btn:hover { background: #EF444415; }
-
-  #record-btn.recording { border-color: var(--error); background: #EF444420; }
-
-  #record-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--error);
-    display: inline-block;
-  }
-
-  #record-btn.recording #record-dot {
-    animation: pulse-dot 1s ease-in-out infinite;
-  }
-
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: 0.4; transform: scale(0.8); }
-  }
-
-  #record-timer {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .record-timer-max { opacity: 0.6; }
-
-  #level-canvas {
-    width: 100%;
-    height: 40px;
-    display: none;
-    border-radius: 6px;
-  }
-
-  #level-canvas.visible { display: block; }
-
-  #vocal-preview {
-    width: 100%;
-    height: 40px;
-    accent-color: var(--accent);
-    filter: invert(1) hue-rotate(200deg) saturate(0.6);
-  }
-
-  .download-btn-secondary {
-    margin-top: 10px;
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .download-btn-secondary:hover { background: var(--accent-dim); }
-
-  #orchestrate-output-section { display: none; }
-
-  #orchestrate-output-section.visible { display: block; }
-
-  /* ── Voice Agent ── */
-  #va-controls button {
-    padding: 12px 20px;
-    border-radius: 10px;
-    border: 1.5px solid var(--accent);
-    background: var(--accent-dim);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  #va-controls button:hover:not(:disabled) { background: #2D1B6945; }
-
-  #va-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  #va-stop-btn { border-color: var(--error); }
-
-  #va-status {
-    margin-top: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  #va-status.live { color: var(--success); }
-
-  #va-audio-player {
-    width: 100%;
-    height: 40px;
-    margin: 12px 0;
-    accent-color: var(--accent);
-    filter: invert(1) hue-rotate(200deg) saturate(0.6);
-  }
-
-  #va-latency-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-  }
-
-  #va-latency-table th, #va-latency-table td {
-    text-align: left;
-    padding: 6px 10px;
+    justify-content: space-between;
+    padding: 18px 32px;
+    background: rgba(7,7,15,0.85);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
   }
 
-  #va-latency-table th { color: var(--muted); font-weight: 500; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--text); }
+  .logo-text span { color: var(--accent); }
 
-  #va-latency-table td.total { color: var(--accent); font-weight: 600; }
+  .topnav-links { display: flex; gap: 30px; align-items: center; }
+  .topnav-links a {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .topnav-links a:hover { color: var(--text); }
+
+  @media (max-width: 700px) { .topnav-links { display: none; } }
+
+  /* ── Buttons ── */
+  .btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 24px;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    box-shadow: 0 0 32px var(--accent-glow);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 100px 0 70px;
+    text-align: center;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid #7C3AED40;
+    border-radius: 20px;
+    padding: 5px 14px;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 600;
+    max-width: 780px;
+    margin: 0 auto 20px;
+  }
+
+  .hero .subline {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 620px;
+    margin: 0 auto 36px;
+  }
+
+  .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 34px; }
+    .hero { padding: 70px 0 50px; }
+  }
+
+  /* ── Sections ── */
+  section { padding: 80px 0; border-top: 1px solid var(--border); }
+
+  .section-eyebrow {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .section-title { font-size: 30px; font-weight: 600; margin-bottom: 14px; }
+  .section-sub { color: var(--muted); max-width: 560px; margin-bottom: 44px; }
+
+  /* ── Demo ── */
+  #demo-drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 14px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--accent-dim);
+    transition: all 0.2s;
+    margin-bottom: 32px;
+  }
+
+  #demo-drop-zone:hover, #demo-drop-zone.drag-over { border-color: var(--accent); background: #2D1B6945; }
+
+  #demo-file-input { display: none; }
+
+  .demo-drop-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .demo-drop-sub { font-size: 13px; color: var(--muted); }
+
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  @media (max-width: 860px) { .demo-grid { grid-template-columns: 1fr; } }
+
+  .demo-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    min-height: 200px;
+  }
+
+  .demo-panel-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .demo-idle { color: var(--muted); font-size: 13px; }
+
+  .demo-bars { display: flex; align-items: flex-end; gap: 3px; height: 20px; }
+  .demo-bars .bar { width: 3px; background: var(--accent); border-radius: 2px; animation: pulse-bar 0.8s ease-in-out infinite; }
+  .demo-bars .bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .demo-bars .bar:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+  .demo-bars .bar:nth-child(3) { height: 20px; animation-delay: 0.2s; }
+  .demo-bars .bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+  .demo-bars .bar:nth-child(5) { height: 8px; animation-delay: 0.4s; }
+  @keyframes pulse-bar { 0%, 100% { transform: scaleY(0.4); opacity: 0.5; } 50% { transform: scaleY(1.0); opacity: 1.0; } }
+
+  .demo-panel audio {
+    width: 100%;
+    height: 36px;
+    margin: 10px 0;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  .demo-error { color: var(--error); font-size: 13px; }
+
+  .intel-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .intel-row:last-child { border-bottom: none; }
+  .intel-row .k { color: var(--muted); }
+  .intel-row .v { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+
+  .quality-score {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--success);
+    margin-bottom: 4px;
+  }
+
+  .demo-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .demo-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .demo-note { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+
+  .studio-link { text-align: center; margin-top: 28px; font-size: 13px; color: var(--muted); }
+
+  /* ── Features ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+
+  @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr; } }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--accent-dim);
+    border: 1px solid #7C3AED40;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .feature-card h3 { font-size: 16px; margin-bottom: 8px; }
+  .feature-card p { font-size: 13px; color: var(--muted); }
+
+  /* ── API section ── */
+  .api-cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  @media (max-width: 800px) { .api-cta-grid { grid-template-columns: 1fr; } }
+
+  pre.code-snippet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  pre .tok-key { color: #7DD3FC; } pre .tok-str { color: #86EFAC; }
+  pre .tok-num { color: #FCA5A5; } pre .tok-comment { color: var(--muted); }
+  pre .tok-flag { color: #A78BFA; }
+
+  /* ── Pricing ── */
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 860px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 26px;
+  }
+
+  .price-card.featured { border-color: var(--accent); box-shadow: 0 0 40px var(--accent-glow); }
+
+  .price-tier { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .price-amount { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; margin-bottom: 4px; }
+  .price-amount span { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .price-list { list-style: none; margin: 22px 0 26px; padding: 0; }
+  .price-list li { font-size: 13px; color: var(--muted); padding: 6px 0; padding-left: 20px; position: relative; }
+  .price-list li::before { content: '✓'; position: absolute; left: 0; color: var(--success); }
+
+  /* ── About ── */
+  .about-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .about-block p { font-size: 16px; color: var(--text); line-height: 1.7; }
+  .about-block p strong { color: var(--accent); }
+
+  /* ── Footer ── */
+  footer {
+    padding: 40px 0 60px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .footer-links a { color: var(--muted); font-size: 13px; }
+  .footer-links a:hover { color: var(--accent); }
 </style>
 </head>
 <body>
 
-<div class="container">
-
-  <!-- Header -->
-  <header>
-    <div class="logo">
-      <svg class="logo-mark" viewBox="0 0 36 36" fill="none">
-        <rect width="36" height="36" rx="10" fill="#7C3AED22"/>
-        <rect x="7" y="20" width="4" height="9" rx="2" fill="#7C3AED"/>
-        <rect x="14" y="14" width="4" height="15" rx="2" fill="#A78BFA"/>
-        <rect x="21" y="9" width="4" height="20" rx="2" fill="#7C3AED"/>
-        <rect x="28" y="16" width="4" height="13" rx="2" fill="#A78BFA"/>
-      </svg>
-      <span class="logo-text">Auvia<span> Engine</span></span>
-    </div>
-    <p class="tagline">AI Audio Intelligence · LangGraph · RAG · DSP</p>
-  </header>
-
-  <!-- Top-level mode tabs -->
-  <div class="top-tabs">
-    <button class="top-tab-btn active" id="tab-enhance" onclick="setTab('enhance')">Enhance Audio</button>
-    <button class="top-tab-btn" id="tab-orchestrate" onclick="setTab('orchestrate')">Sing &amp; Orchestrate</button>
-    <button class="top-tab-btn" id="tab-voice-agent" onclick="setTab('voice-agent')">Voice Agent</button>
-  </div>
-
-  <div id="enhance-flow">
-
-  <!-- Upload -->
-  <div class="card">
-    <div class="card-label">01 · Upload Audio</div>
-    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
-      <input type="file" id="file-input" accept=".wav,.mp3,audio/wav,audio/mpeg">
-
-      <!-- Empty state -->
-      <div id="empty-state">
-        <div class="drop-icon">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="19" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="4 3"/>
-            <path d="M20 26V14M14 20l6-6 6 6" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="drop-title">Drop your audio here</div>
-        <div class="drop-sub">or click to browse &nbsp;·&nbsp; <span>.wav</span> &nbsp;<span>.mp3</span></div>
-      </div>
-
-      <!-- File selected state -->
-      <div class="file-info" id="file-info">
-        <div class="file-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 3v7m0 0l-3-3m3 3l3-3" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="file-meta">
-          <div class="file-name" id="file-name">filename.wav</div>
-          <div class="file-size" id="file-size">0 KB</div>
-        </div>
-        <span class="file-change" onclick="event.stopPropagation(); resetFile()">Change</span>
-      </div>
-    </div>
-
-    <!-- Waveform visualizer -->
-    <canvas id="waveform-canvas"></canvas>
-  </div>
-
-  <!-- Query -->
-  <div class="card">
-    <div class="card-label">02 · Instruction</div>
-    <div class="query-wrap">
-      <textarea id="query" placeholder="e.g. Remove background noise and enhance the vocals for a podcast recording...">Enhance this audio — remove background noise, warm up the low-mids, and lift the vocal presence.</textarea>
-    </div>
-  </div>
-
-  <!-- Mode -->
-  <div class="card">
-    <div class="card-label">03 · Processing Mode</div>
-    <div class="mode-toggle">
-      <button class="mode-btn active" id="btn-agent" onclick="setMode('agent')">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M4.5 7h5M7 4.5v5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
-        AI Agent
-      </button>
-      <button class="mode-btn" id="btn-dsp" onclick="setMode('dsp')">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="9" width="2" height="4" rx="1" fill="currentColor"/>
-          <rect x="4.5" y="6" width="2" height="7" rx="1" fill="currentColor"/>
-          <rect x="8" y="3" width="2" height="10" rx="1" fill="currentColor"/>
-          <rect x="11.5" y="7" width="2" height="6" rx="1" fill="currentColor"/>
-        </svg>
-        DSP Only
-      </button>
-    </div>
-    <p class="mode-desc" id="mode-desc">
-      <strong style="color: var(--text)">AI Agent</strong> — LangGraph queries the audio knowledge base (RAG), reasons about the best processing approach, then runs the DSP pipeline.
-    </p>
-  </div>
-
-  <!-- Error -->
-  <div class="error-box" id="error-box"></div>
-
-  <!-- Process -->
-  <button id="process-btn" onclick="processAudio()" disabled>
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <polygon points="6,3 15,9 6,15" fill="white"/>
+<header class="topnav">
+  <a href="/" class="logo" style="text-decoration:none">
+    <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
+      <rect width="36" height="36" rx="10" fill="#7C3AED22"/>
+      <rect x="7" y="20" width="4" height="9" rx="2" fill="#7C3AED"/>
+      <rect x="14" y="14" width="4" height="15" rx="2" fill="#A78BFA"/>
+      <rect x="21" y="9" width="4" height="20" rx="2" fill="#7C3AED"/>
+      <rect x="28" y="16" width="4" height="13" rx="2" fill="#A78BFA"/>
     </svg>
-    Process Audio
-  </button>
+    <span class="logo-text">Auvia<span> Engine</span></span>
+  </a>
+  <nav class="topnav-links">
+    <a href="#product">Product</a>
+    <a href="/api">API</a>
+    <a href="/api">Docs</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/studio">Studio</a>
+  </nav>
+</header>
 
-  <!-- Output -->
-  <div id="output-section">
-    <div style="height: 20px"></div>
-    <div class="card output-card">
-      <div class="card-label">Output</div>
-
-      <div class="result-meta" id="result-meta"></div>
-      <div class="result-text" id="result-text"></div>
-
-      <audio id="output-player" controls></audio>
-
-      <button class="download-btn" id="download-btn" onclick="downloadAudio()">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        Download Enhanced Audio
-      </button>
+<!-- Hero -->
+<section class="hero" id="product" style="border-top:none">
+  <div class="wrap">
+    <span class="hero-badge">Open Beta · No API Key Required Yet</span>
+    <h1>Audio Intelligence Infrastructure</h1>
+    <p class="subline">One API. Real audio in. Acoustic intelligence, enhanced output, and AI-generated content out.</p>
+    <div class="hero-ctas">
+      <a href="#demo" class="btn-primary">Try the demo</a>
+      <a href="/api" class="btn-secondary">View API docs</a>
     </div>
   </div>
+</section>
 
-  </div><!-- /enhance-flow -->
+<!-- Live demo -->
+<section id="demo">
+  <div class="wrap">
+    <div class="section-eyebrow">Live Demo</div>
+    <h2 class="section-title">Upload audio, see three outputs at once</h2>
+    <p class="section-sub">No signup. This runs against the real API, right now.</p>
 
-  <div id="orchestrate-flow" style="display:none">
+    <div id="demo-drop-zone" onclick="document.getElementById('demo-file-input').click()">
+      <input type="file" id="demo-file-input" accept=".wav,.mp3,audio/wav,audio/mpeg">
+      <div class="demo-drop-title" id="demo-drop-title">Drop audio here or click to browse</div>
+      <div class="demo-drop-sub">.wav or .mp3 &nbsp;·&nbsp; processed live via /enhance-audio, /intelligence, and /orchestrate</div>
+    </div>
 
-    <!-- Record -->
-    <div class="card">
-      <div class="card-label">01 · Record Your Vocals</div>
-      <div id="record-zone">
-        <button id="record-btn" onclick="toggleRecording()">
-          <span id="record-dot"></span>
-          <span id="record-label">Start Recording</span>
-        </button>
-        <div id="record-timer">0:00 <span class="record-timer-max">/ 1:00</span></div>
-        <canvas id="level-canvas"></canvas>
-        <audio id="vocal-preview" controls style="display:none"></audio>
+    <div class="demo-grid">
+      <div class="demo-panel" id="panel-enhance">
+        <div class="demo-panel-label">Enhanced Audio</div>
+        <div id="body-enhance"><div class="demo-idle">Upload a file to run this live.</div></div>
+      </div>
+      <div class="demo-panel" id="panel-intelligence">
+        <div class="demo-panel-label">Intelligence Report</div>
+        <div id="body-intelligence"><div class="demo-idle">Pitch, key, tempo, and a quality score.</div></div>
+      </div>
+      <div class="demo-panel" id="panel-orchestrate">
+        <div class="demo-panel-label">AI Backing Track</div>
+        <div id="body-orchestrate"><div class="demo-idle">15s preview · full length via the API.</div></div>
       </div>
     </div>
 
-    <!-- Mood -->
-    <div class="card">
-      <div class="card-label">02 · Mood / Genre (optional)</div>
-      <div class="query-wrap">
-        <input type="text" id="mood-input" placeholder="e.g. warm acoustic ballad, upbeat pop, lo-fi hip-hop... leave blank to let Auvia decide">
+    <div class="studio-link">Want the full interactive tool — mood control, downloads, the real-time voice agent? <a href="/studio">Open the Studio →</a></div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="wrap">
+    <div class="section-eyebrow">Capabilities</div>
+    <h2 class="section-title">Four engines, one API</h2>
+    <p class="section-sub">Each endpoint is independently useful. Together they cover the full loop from raw audio to finished, intelligent output.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9h2l2-6 3 12 2-9 2 6h3" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Audio Enhancement Engine</h3>
+        <p>Production-grade DSP + AI processing — noise reduction, spectral EQ, peak normalization, agentic reasoning about what a recording needs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="#A78BFA" stroke-width="1.5"/><path d="M9 5.5v3.5l2.5 2" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Acoustic Intelligence</h3>
+        <p>Structured data from any audio input — pitch, note, key, tempo, noise floor, dynamic range, and a 0–100 quality score, as clean JSON.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Content Generation</h3>
+        <p>AI backing tracks matched to input audio — tempo- and key-locked instrumentals composed around a vocal recording, mixed and ready.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6.5" y="2" width="5" height="9" rx="2.5" stroke="#A78BFA" stroke-width="1.5"/><path d="M4 9a5 5 0 0010 0M9 14v2.5" stroke="#A78BFA" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Voice Agent</h3>
+        <p>Real-time conversational audio AI — local VAD turn-taking, cascaded STT → LLM → TTS, sub-second latency measured per stage. <a href="/studio">Try it →</a></p>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- Error -->
-    <div class="error-box" id="orchestrate-error-box"></div>
+<!-- API -->
+<section id="api-section">
+  <div class="wrap">
+    <div class="section-eyebrow">For Developers</div>
+    <h2 class="section-title">Built for developers</h2>
+    <div class="api-cta-grid">
+      <div>
+        <p class="section-sub" style="margin-bottom:20px">No SDK, no boilerplate — every endpoint takes a raw file upload and returns JSON. Open beta, no API key required yet.</p>
+        <a href="/api" class="btn-secondary">Read the full API reference →</a>
+      </div>
+      <pre class="code-snippet"><span class="tok-comment"># structured acoustic analysis, no LLM</span>
+curl -X POST https://auviaengine.com/intelligence \
+  -F <span class="tok-flag">file</span>=@vocal.wav
 
-    <!-- Generate -->
-    <button id="orchestrate-btn" onclick="generateOrchestration()" disabled>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <polygon points="6,3 15,9 6,15" fill="white"/>
-      </svg>
-      Generate Orchestration
-    </button>
+<span class="tok-comment"># →</span>
+{
+  <span class="tok-key">"pitch_hz"</span>: <span class="tok-num">261.63</span>,
+  <span class="tok-key">"note"</span>: <span class="tok-str">"C4"</span>,
+  <span class="tok-key">"key"</span>: <span class="tok-str">"C major"</span>,
+  <span class="tok-key">"tempo_bpm"</span>: <span class="tok-num">120.0</span>,
+  <span class="tok-key">"quality_score"</span>: <span class="tok-num">87</span>
+}</pre>
+    </div>
+  </div>
+</section>
 
-    <!-- Output -->
-    <div id="orchestrate-output-section">
-      <div style="height: 20px"></div>
-      <div class="card output-card">
-        <div class="card-label">Output</div>
+<!-- Pricing -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-eyebrow">Pricing</div>
+    <h2 class="section-title">Straightforward, usage-based plans</h2>
+    <p class="section-sub">Currently in open beta — every plan below activates once keyed access rolls out. Reach out for early terms.</p>
 
-        <div class="result-meta" id="orchestrate-result-meta"></div>
-        <div class="result-text" id="orchestrate-transcript" style="display:none"></div>
-        <div class="result-text" id="orchestrate-result-text"></div>
-
-        <audio id="orchestrate-output-player" controls></audio>
-
-        <button class="download-btn" id="download-mix-btn" onclick="downloadOrchestrated()">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Download Mix
-        </button>
-        <button class="download-btn download-btn-secondary" id="download-instrumental-btn" onclick="downloadInstrumental()" style="display:none">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Download Instrumental Only
-        </button>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-tier">Developer</div>
+        <div class="price-amount">$49<span>/mo</span></div>
+        <ul class="price-list">
+          <li>All four API endpoints</li>
+          <li>Standard rate limits</li>
+          <li>Community support</li>
+          <li>Good for prototypes &amp; side projects</li>
+        </ul>
+        <a href="/api#get-key" class="btn-secondary" style="width:100%; justify-content:center">Get started</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-tier">Business</div>
+        <div class="price-amount">$299<span>/mo</span></div>
+        <ul class="price-list">
+          <li>Everything in Developer</li>
+          <li>Higher rate limits</li>
+          <li>Priority processing queue</li>
+          <li>Email support</li>
+        </ul>
+        <a href="/api#get-key" class="btn-primary" style="width:100%; justify-content:center">Get started</a>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Enterprise</div>
+        <div class="price-amount">Custom</div>
+        <ul class="price-list">
+          <li>Everything in Business</li>
+          <li>Custom rate limits &amp; SLAs</li>
+          <li>Dedicated support</li>
+          <li>Custom voice / model tuning</li>
+        </ul>
+        <a href="/api#get-key" class="btn-secondary" style="width:100%; justify-content:center">Contact us</a>
       </div>
     </div>
+  </div>
+</section>
 
-  </div><!-- /orchestrate-flow -->
-
-  <div id="voice-agent-flow" style="display:none">
-
-    <!-- Session -->
-    <div class="card">
-      <div class="card-label">Real-Time Voice Agent</div>
-      <p class="mode-desc" style="margin-top:0">
-        Cascaded pipeline: local VAD detects when you stop talking → Sarvam STT →
-        LLM reply → ElevenLabs TTS. Every turn's latency is measured and shown below.
-      </p>
-      <div id="va-controls" style="display:flex; gap:10px; margin-top:16px">
-        <button id="va-start-btn" onclick="startVoiceSession()">Start Conversation</button>
-        <button id="va-stop-btn" onclick="stopVoiceSession()" disabled>End Conversation</button>
-      </div>
-      <div id="va-status">Not connected</div>
+<!-- About -->
+<section id="about">
+  <div class="wrap">
+    <div class="section-eyebrow" style="text-align:center">About</div>
+    <div class="about-block">
+      <p>Built by <strong>Priyal Rathore</strong> — AI engineer and trained classical vocalist. The domain expertise is the product.</p>
     </div>
+  </div>
+</section>
 
-    <!-- Error -->
-    <div class="error-box" id="va-error-box"></div>
-
-    <!-- Live turn -->
-    <div class="card" id="va-turn-card" style="display:none">
-      <div class="card-label">Latest Turn</div>
-      <div class="result-text" id="va-transcript"></div>
-      <div class="result-text" id="va-reply"></div>
-      <audio id="va-audio-player" controls></audio>
-
-      <table id="va-latency-table">
-        <thead>
-          <tr><th>Stage</th><th>ms</th></tr>
-        </thead>
-        <tbody id="va-latency-body"></tbody>
-      </table>
+<footer>
+  <div class="wrap">
+    <div class="footer-links">
+      <a href="/api">API Docs</a>
+      <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
+      <a href="https://linkedin.com/in/priyalrathore17">LinkedIn</a>
+      <a href="mailto:priyalrathore2003@gmail.com">Email</a>
     </div>
-
-  </div><!-- /voice-agent-flow -->
-
-  <footer>
-    Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a> &nbsp;·&nbsp;
-    <a href="/docs">API Docs</a> &nbsp;·&nbsp;
-    <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
-  </footer>
-
-</div>
+    <div>&copy; Auvia Engine</div>
+  </div>
+</footer>
 
 <script>
-  // ── State ──────────────────────────────────────────────────────────────────
-  let selectedFile = null;
-  let currentMode  = 'agent';
-  let outputBlob   = null;
-  let outputName   = 'auvia_enhanced.wav';
-
-  // Auto-detect API base URL
   const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8080'
     : window.location.origin;
 
-  // ── File handling ──────────────────────────────────────────────────────────
-  const dropZone     = document.getElementById('drop-zone');
-  const fileInput    = document.getElementById('file-input');
-  const emptyState   = document.getElementById('empty-state');
-  const fileInfo     = document.getElementById('file-info');
-  const fileNameEl   = document.getElementById('file-name');
-  const fileSizeEl   = document.getElementById('file-size');
-  const processBtn   = document.getElementById('process-btn');
-  const canvas       = document.getElementById('waveform-canvas');
+  const DEMO_ORCHESTRATE_MAX_SECONDS = 15; // bounds ElevenLabs Music credit spend on the public demo
 
-  fileInput.addEventListener('change', e => {
-    if (e.target.files[0]) handleFile(e.target.files[0]);
-  });
+  const dropZone = document.getElementById('demo-drop-zone');
+  const fileInput = document.getElementById('demo-file-input');
 
-  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) runLiveDemo(e.target.files[0]); });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
   dropZone.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files[0]) runLiveDemo(e.dataTransfer.files[0]);
   });
 
-  function handleFile(file) {
-    selectedFile = file;
-    fileNameEl.textContent = file.name;
-    fileSizeEl.textContent = formatBytes(file.size);
-    emptyState.style.display = 'none';
-    fileInfo.classList.add('visible');
-    dropZone.classList.add('has-file');
-    processBtn.disabled = false;
-    hideError();
-    drawWaveform(file);
+  function loadingHtml() {
+    return `<div class="demo-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>`;
   }
 
-  function resetFile() {
-    selectedFile = null;
-    fileInput.value = '';
-    emptyState.style.display = '';
-    fileInfo.classList.remove('visible');
-    dropZone.classList.remove('has-file');
-    processBtn.disabled = true;
-    canvas.classList.remove('visible');
-    document.getElementById('output-section').classList.remove('visible');
+  function runLiveDemo(file) {
+    document.getElementById('demo-drop-title').textContent = file.name;
+    ['enhance', 'intelligence', 'orchestrate'].forEach(id => {
+      document.getElementById('body-' + id).innerHTML = loadingHtml();
+    });
+    runEnhancePanel(file);
+    runIntelligencePanel(file);
+    runOrchestratePanel(file);
   }
 
-  function formatBytes(b) {
-    if (b < 1024) return b + ' B';
-    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-    return (b/1048576).toFixed(1) + ' MB';
-  }
-
-  // ── Waveform preview ───────────────────────────────────────────────────────
-  async function drawWaveform(file) {
-    try {
-      const ctx  = new AudioContext();
-      const buf  = await file.arrayBuffer();
-      const data = await ctx.decodeAudioData(buf);
-      const ch   = data.getChannelData(0);
-      const w    = canvas.offsetWidth * 2;
-      const h    = 112;
-      canvas.width  = w;
-      canvas.height = h;
-      const c    = canvas.getContext('2d');
-      const step = Math.ceil(ch.length / (w / 2));
-      const mid  = h / 2;
-      c.clearRect(0, 0, w, h);
-
-      const grad = c.createLinearGradient(0, 0, w, 0);
-      grad.addColorStop(0,   '#4F46E5');
-      grad.addColorStop(0.5, '#7C3AED');
-      grad.addColorStop(1,   '#4F46E5');
-      c.strokeStyle = grad;
-      c.lineWidth = 1.5;
-      c.beginPath();
-
-      for (let i = 0; i < w / 2; i++) {
-        let max = 0;
-        for (let j = 0; j < step; j++) {
-          const val = Math.abs(ch[i * step + j] || 0);
-          if (val > max) max = val;
-        }
-        const amp = max * (mid - 4);
-        c.moveTo(i * 2, mid - amp);
-        c.lineTo(i * 2, mid + amp);
-      }
-      c.stroke();
-      canvas.classList.add('visible');
-      await ctx.close();
-    } catch(e) {
-      // MP3 decode may fail on some browsers — silently skip
-    }
-  }
-
-  // ── Mode toggle ────────────────────────────────────────────────────────────
-  const modeDescriptions = {
-    agent: '<strong style="color: var(--text)">AI Agent</strong> — LangGraph queries the audio knowledge base (RAG), reasons about the best processing approach, then runs the DSP pipeline.',
-    dsp:   '<strong style="color: var(--text)">DSP Only</strong> — Directly runs the signal processing pipeline: noise reduction → spectral EQ → peak normalization. No LLM required.',
-  };
-
-  function setMode(mode) {
-    currentMode = mode;
-    document.getElementById('btn-agent').classList.toggle('active', mode === 'agent');
-    document.getElementById('btn-dsp').classList.toggle('active',   mode === 'dsp');
-    document.getElementById('mode-desc').innerHTML = modeDescriptions[mode];
-  }
-
-  // ── Process ────────────────────────────────────────────────────────────────
-  async function processAudio() {
-    if (!selectedFile) return;
-    hideError();
-    setLoading(true);
-    document.getElementById('output-section').classList.remove('visible');
-
+  async function runEnhancePanel(file) {
     try {
       const form = new FormData();
-      form.append('file', selectedFile);
-      if (currentMode === 'agent') {
-        form.append('query', document.getElementById('query').value);
-      }
-
-      const endpoint = currentMode === 'agent' ? '/process-audio' : '/enhance-audio';
-      const res = await fetch(API_BASE + endpoint, { method: 'POST', body: form });
+      form.append('file', file);
+      const res = await fetch(API_BASE + '/enhance-audio', { method: 'POST', body: form });
       const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Enhancement failed');
 
-      if (!res.ok) throw new Error(data.detail || 'Processing failed');
-      if (data.status !== 'success') throw new Error(data.result || 'Unknown error');
-
-      showOutput(data);
-
-    } catch(err) {
-      showError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function setLoading(loading) {
-    const btn = document.getElementById('process-btn');
-    if (loading) {
-      btn.disabled = true;
-      btn.innerHTML = `
-        <div class="bars">
-          <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-          <div class="bar"></div><div class="bar"></div>
-        </div>
-        Processing…`;
-    } else {
-      btn.disabled = !selectedFile;
-      btn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <polygon points="6,3 15,9 6,15" fill="white"/>
-        </svg>
-        Process Audio`;
-    }
-  }
-
-  // ── Output ─────────────────────────────────────────────────────────────────
-  function showOutput(data) {
-    // Decode audio
-    const bytes  = atob(data.audio_b64);
-    const arr    = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    outputBlob  = new Blob([arr], { type: 'audio/wav' });
-    outputName  = data.filename || 'auvia_enhanced.wav';
-
-    // Player
-    const player = document.getElementById('output-player');
-    player.src   = URL.createObjectURL(outputBlob);
-
-    // Badges
-    const meta = document.getElementById('result-meta');
-    meta.innerHTML = '';
-    if (data.dsp_performed) {
-      meta.innerHTML += '<span class="badge badge-green">✓ DSP Applied</span>';
-    }
-    if (currentMode === 'agent') {
-      meta.innerHTML += '<span class="badge badge-purple">⬡ LangGraph</span>';
-      meta.innerHTML += '<span class="badge badge-purple">◉ RAG</span>';
-    }
-
-    // Agent response text
-    const resultEl = document.getElementById('result-text');
-    resultEl.style.display = data.result ? '' : 'none';
-    resultEl.textContent = data.result || '';
-
-    document.getElementById('output-section').classList.add('visible');
-    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function downloadAudio() {
-    if (!outputBlob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(outputBlob);
-    a.download = outputName;
-    a.click();
-  }
-
-  // ── Error ──────────────────────────────────────────────────────────────────
-  function showError(msg) {
-    const el = document.getElementById('error-box');
-    el.textContent = '⚠ ' + msg;
-    el.classList.add('visible');
-  }
-
-  function hideError() {
-    document.getElementById('error-box').classList.remove('visible');
-  }
-
-  // ── Top-level tabs ─────────────────────────────────────────────────────────
-  function setTab(tab) {
-    document.getElementById('tab-enhance').classList.toggle('active', tab === 'enhance');
-    document.getElementById('tab-orchestrate').classList.toggle('active', tab === 'orchestrate');
-    document.getElementById('tab-voice-agent').classList.toggle('active', tab === 'voice-agent');
-    document.getElementById('enhance-flow').style.display = tab === 'enhance' ? '' : 'none';
-    document.getElementById('orchestrate-flow').style.display = tab === 'orchestrate' ? '' : 'none';
-    document.getElementById('voice-agent-flow').style.display = tab === 'voice-agent' ? '' : 'none';
-    if (tab !== 'voice-agent') stopVoiceSession();
-  }
-
-  // ── Sing & Orchestrate: recording ─────────────────────────────────────────
-  const MAX_RECORD_SECONDS = 60;
-
-  let mediaRecorder   = null;
-  let mediaStream     = null;
-  let recordedChunks  = [];
-  let recordedBlob    = null;
-  let recordTimerId   = null;
-  let recordSeconds   = 0;
-  let audioCtx        = null;
-  let analyser        = null;
-  let levelAnimId     = null;
-
-  const recordBtn     = document.getElementById('record-btn');
-  const recordLabel   = document.getElementById('record-label');
-  const recordTimerEl = document.getElementById('record-timer');
-  const levelCanvas   = document.getElementById('level-canvas');
-  const vocalPreview  = document.getElementById('vocal-preview');
-  const orchestrateBtn = document.getElementById('orchestrate-btn');
-
-  async function toggleRecording() {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      stopRecording();
-    } else {
-      await startRecording();
-    }
-  }
-
-  async function startRecording() {
-    hideOrchestrateError();
-    document.getElementById('orchestrate-output-section').classList.remove('visible');
-
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const blob = b64ToBlob(data.audio_b64, 'audio/wav');
+      const url = URL.createObjectURL(blob);
+      document.getElementById('body-enhance').innerHTML = `
+        <audio controls src="${url}"></audio>
+        <div class="demo-note">${data.result || ''}</div>
+      `;
     } catch (err) {
-      showOrchestrateError('Microphone access denied or unavailable: ' + err.message);
-      return;
+      document.getElementById('body-enhance').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
     }
-
-    recordedChunks = [];
-    recordedBlob = null;
-    mediaRecorder = new MediaRecorder(mediaStream);
-
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      recordedBlob = new Blob(recordedChunks, { type: 'audio/webm' });
-      vocalPreview.src = URL.createObjectURL(recordedBlob);
-      vocalPreview.style.display = 'block';
-      orchestrateBtn.disabled = false;
-      stopLevelMeter();
-      mediaStream.getTracks().forEach(t => t.stop());
-    };
-
-    mediaRecorder.start();
-    recordBtn.classList.add('recording');
-    recordLabel.textContent = 'Stop Recording';
-    recordSeconds = 0;
-    updateRecordTimer();
-    recordTimerId = setInterval(() => {
-      recordSeconds++;
-      updateRecordTimer();
-      if (recordSeconds >= MAX_RECORD_SECONDS) stopRecording();
-    }, 1000);
-
-    startLevelMeter(mediaStream);
   }
 
-  function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
-    clearInterval(recordTimerId);
-    recordBtn.classList.remove('recording');
-    recordLabel.textContent = 'Start Recording';
-  }
-
-  function updateRecordTimer() {
-    const m = Math.floor(recordSeconds / 60);
-    const s = String(recordSeconds % 60).padStart(2, '0');
-    recordTimerEl.innerHTML = `${m}:${s} <span class="record-timer-max">/ 1:00</span>`;
-  }
-
-  function startLevelMeter(stream) {
-    audioCtx = new AudioContext();
-    const source = audioCtx.createMediaStreamSource(stream);
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-
-    levelCanvas.classList.add('visible');
-    const data = new Uint8Array(analyser.frequencyBinCount);
-
-    function draw() {
-      levelAnimId = requestAnimationFrame(draw);
-      analyser.getByteFrequencyData(data);
-
-      const w = levelCanvas.offsetWidth * 2;
-      const h = 80;
-      levelCanvas.width = w;
-      levelCanvas.height = h;
-      const c = levelCanvas.getContext('2d');
-      c.clearRect(0, 0, w, h);
-
-      const barCount = 40;
-      const barWidth = w / barCount;
-      for (let i = 0; i < barCount; i++) {
-        const value = data[Math.floor(i * data.length / barCount)] / 255;
-        const barHeight = value * h;
-        c.fillStyle = '#7C3AED';
-        c.fillRect(i * barWidth, h - barHeight, barWidth * 0.7, barHeight);
-      }
-    }
-    draw();
-  }
-
-  function stopLevelMeter() {
-    if (levelAnimId) cancelAnimationFrame(levelAnimId);
-    if (audioCtx) audioCtx.close();
-    levelCanvas.classList.remove('visible');
-  }
-
-  // ── Sing & Orchestrate: generate ──────────────────────────────────────────
-  let orchestratedMixBlob = null;
-  let orchestratedMixName = 'auvia_orchestrated.wav';
-  let orchestratedInstrumentalBlob = null;
-  let orchestratedInstrumentalName = 'auvia_instrumental.mp3';
-
-  async function generateOrchestration() {
-    if (!recordedBlob) return;
-    hideOrchestrateError();
-    setOrchestrateLoading(true);
-    document.getElementById('orchestrate-output-section').classList.remove('visible');
-
+  async function runIntelligencePanel(file) {
     try {
       const form = new FormData();
-      form.append('file', recordedBlob, 'vocal.webm');
-      form.append('mood', document.getElementById('mood-input').value);
+      form.append('file', file);
+      const res = await fetch(API_BASE + '/intelligence', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Analysis failed');
 
+      const tags = (data.recommended_processing || []).map(t => `<span class="demo-badge">${t}</span>`).join('');
+      document.getElementById('body-intelligence').innerHTML = `
+        <div class="quality-score">${data.quality_score}<span style="font-size:14px;color:var(--muted)">/100</span></div>
+        <div class="intel-row"><span class="k">Pitch</span><span class="v">${data.pitch_hz} Hz (${data.note || '—'})</span></div>
+        <div class="intel-row"><span class="k">Key</span><span class="v">${data.key}</span></div>
+        <div class="intel-row"><span class="k">Tempo</span><span class="v">${data.tempo_bpm} BPM</span></div>
+        <div class="intel-row"><span class="k">Noise floor</span><span class="v">${data.noise_floor_db} dB</span></div>
+        <div class="intel-row"><span class="k">Dynamic range</span><span class="v">${data.dynamic_range_db} dB</span></div>
+        <div class="demo-badges">${tags}</div>
+      `;
+    } catch (err) {
+      document.getElementById('body-intelligence').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  async function runOrchestratePanel(file) {
+    try {
+      const trimmedBlob = await trimAudioFile(file, DEMO_ORCHESTRATE_MAX_SECONDS);
+      const form = new FormData();
+      form.append('file', trimmedBlob, 'demo.wav');
       const res = await fetch(API_BASE + '/orchestrate', { method: 'POST', body: form });
       const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Orchestration failed');
 
-      if (!res.ok) throw new Error(data.detail || 'Orchestration failed');
-      if (data.status !== 'success') throw new Error(data.result || 'Unknown error');
-
-      showOrchestrateOutput(data);
-
+      const blob = b64ToBlob(data.audio_b64, 'audio/wav');
+      const url = URL.createObjectURL(blob);
+      document.getElementById('body-orchestrate').innerHTML = `
+        <audio controls src="${url}"></audio>
+        <div class="demo-note">${data.key || ''} · ${data.tempo_bpm ?? ''} BPM — 15s preview, full track via the API</div>
+      `;
     } catch (err) {
-      showOrchestrateError(err.message);
-    } finally {
-      setOrchestrateLoading(false);
+      document.getElementById('body-orchestrate').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
     }
   }
 
-  function setOrchestrateLoading(loading) {
-    if (loading) {
-      orchestrateBtn.disabled = true;
-      orchestrateBtn.innerHTML = `
-        <div class="bars">
-          <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-          <div class="bar"></div><div class="bar"></div>
-        </div>
-        Composing…`;
-    } else {
-      orchestrateBtn.disabled = !recordedBlob;
-      orchestrateBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <polygon points="6,3 15,9 6,15" fill="white"/>
-        </svg>
-        Generate Orchestration`;
+  async function trimAudioFile(file, maxSeconds) {
+    const ctx = new AudioContext();
+    const arrayBuf = await file.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuf);
+    const blob = audioBufferToWavBlob(audioBuffer, maxSeconds);
+    await ctx.close();
+    return blob;
+  }
+
+  function audioBufferToWavBlob(audioBuffer, maxSeconds) {
+    const sampleRate = audioBuffer.sampleRate;
+    const maxSamples = Math.min(audioBuffer.length, Math.floor(maxSeconds * sampleRate));
+    const channelData = audioBuffer.getChannelData(0).slice(0, maxSamples);
+
+    const buffer = new ArrayBuffer(44 + channelData.length * 2);
+    const view = new DataView(buffer);
+
+    function writeString(offset, str) {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
     }
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + channelData.length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, channelData.length * 2, true);
+
+    let offset = 44;
+    for (let i = 0; i < channelData.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, channelData[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
   }
 
   function b64ToBlob(b64, type) {
@@ -1336,193 +708,7 @@
     for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
     return new Blob([arr], { type });
   }
-
-  function showOrchestrateOutput(data) {
-    orchestratedMixBlob = data.audio_b64 ? b64ToBlob(data.audio_b64, 'audio/wav') : null;
-    orchestratedMixName = data.filename || 'auvia_orchestrated.wav';
-
-    const player = document.getElementById('orchestrate-output-player');
-    if (orchestratedMixBlob) player.src = URL.createObjectURL(orchestratedMixBlob);
-
-    const instrumentalBtn = document.getElementById('download-instrumental-btn');
-    if (data.instrumental_b64) {
-      orchestratedInstrumentalBlob = b64ToBlob(data.instrumental_b64, 'audio/mpeg');
-      orchestratedInstrumentalName = `auvia_instrumental_${(data.session_id || '').slice(0, 8)}.mp3`;
-      instrumentalBtn.style.display = '';
-    } else {
-      orchestratedInstrumentalBlob = null;
-      instrumentalBtn.style.display = 'none';
-    }
-
-    const meta = document.getElementById('orchestrate-result-meta');
-    meta.innerHTML = '';
-    if (data.tempo_bpm) meta.innerHTML += `<span class="badge badge-purple">♩ ${data.tempo_bpm} BPM</span>`;
-    if (data.key) meta.innerHTML += `<span class="badge badge-purple">♪ ${data.key}</span>`;
-    if (data.language_code) meta.innerHTML += `<span class="badge badge-green">${data.language_code}</span>`;
-
-    const transcriptEl = document.getElementById('orchestrate-transcript');
-    transcriptEl.style.display = data.transcript ? '' : 'none';
-    transcriptEl.textContent = data.transcript ? '"' + data.transcript + '"' : '';
-
-    const resultEl = document.getElementById('orchestrate-result-text');
-    resultEl.style.display = data.agent_response ? '' : 'none';
-    resultEl.textContent = data.agent_response || '';
-
-    document.getElementById('orchestrate-output-section').classList.add('visible');
-    document.getElementById('orchestrate-output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function downloadOrchestrated() {
-    if (!orchestratedMixBlob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(orchestratedMixBlob);
-    a.download = orchestratedMixName;
-    a.click();
-  }
-
-  function downloadInstrumental() {
-    if (!orchestratedInstrumentalBlob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(orchestratedInstrumentalBlob);
-    a.download = orchestratedInstrumentalName;
-    a.click();
-  }
-
-  function showOrchestrateError(msg) {
-    const el = document.getElementById('orchestrate-error-box');
-    el.textContent = '⚠ ' + msg;
-    el.classList.add('visible');
-  }
-
-  function hideOrchestrateError() {
-    document.getElementById('orchestrate-error-box').classList.remove('visible');
-  }
-
-  // ── Voice Agent: real-time conversation ───────────────────────────────────
-  let vaWs           = null;
-  let vaAudioCtx      = null;
-  let vaMediaStream   = null;
-  let vaProcessorNode = null;
-
-  const vaStartBtn = document.getElementById('va-start-btn');
-  const vaStopBtn  = document.getElementById('va-stop-btn');
-  const vaStatusEl = document.getElementById('va-status');
-
-  function vaSetStatus(text, live) {
-    vaStatusEl.textContent = text;
-    vaStatusEl.classList.toggle('live', !!live);
-  }
-
-  function showVaError(msg) {
-    const el = document.getElementById('va-error-box');
-    el.textContent = '⚠ ' + msg;
-    el.classList.add('visible');
-  }
-
-  function hideVaError() {
-    document.getElementById('va-error-box').classList.remove('visible');
-  }
-
-  async function startVoiceSession() {
-    if (vaWs) return;
-    hideVaError();
-
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      showVaError('Microphone access denied or unavailable: ' + err.message);
-      return;
-    }
-    vaMediaStream = stream;
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsBase = API_BASE.replace(/^https?:/, wsProtocol);
-    vaWs = new WebSocket(wsBase + '/ws/voice-agent');
-    vaWs.binaryType = 'arraybuffer';
-
-    vaWs.onopen = () => {
-      vaSetStatus('Connected — listening…', true);
-      vaStartBtn.disabled = true;
-      vaStopBtn.disabled = false;
-
-      vaAudioCtx = new AudioContext({ sampleRate: 16000 });
-      const source = vaAudioCtx.createMediaStreamSource(stream);
-      vaProcessorNode = vaAudioCtx.createScriptProcessor(4096, 1, 1);
-
-      vaProcessorNode.onaudioprocess = e => {
-        if (!vaWs || vaWs.readyState !== WebSocket.OPEN) return;
-        const float32 = e.inputBuffer.getChannelData(0);
-        const int16 = new Int16Array(float32.length);
-        for (let i = 0; i < float32.length; i++) {
-          const s = Math.max(-1, Math.min(1, float32[i]));
-          int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-        }
-        vaWs.send(int16.buffer);
-      };
-
-      source.connect(vaProcessorNode);
-      vaProcessorNode.connect(vaAudioCtx.destination);
-    };
-
-    vaWs.onmessage = event => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'error') {
-        showVaError(data.message);
-        return;
-      }
-      if (data.type === 'turn') showVaTurn(data);
-    };
-
-    vaWs.onerror = () => showVaError('Voice agent connection error.');
-
-    vaWs.onclose = () => {
-      vaSetStatus('Not connected');
-      vaWs = null;
-      vaStartBtn.disabled = false;
-      vaStopBtn.disabled = true;
-    };
-  }
-
-  function stopVoiceSession() {
-    if (vaProcessorNode) { vaProcessorNode.disconnect(); vaProcessorNode = null; }
-    if (vaAudioCtx) { vaAudioCtx.close(); vaAudioCtx = null; }
-    if (vaMediaStream) { vaMediaStream.getTracks().forEach(t => t.stop()); vaMediaStream = null; }
-    if (vaWs) { vaWs.close(); vaWs = null; }
-    vaStartBtn.disabled = false;
-    vaStopBtn.disabled = true;
-    vaSetStatus('Not connected');
-  }
-
-  function showVaTurn(data) {
-    document.getElementById('va-turn-card').style.display = '';
-    vaSetStatus('Listening…', true);
-
-    const transcriptEl = document.getElementById('va-transcript');
-    transcriptEl.textContent = data.transcript ? '"' + data.transcript + '"' : (data.note || '');
-
-    const replyEl = document.getElementById('va-reply');
-    replyEl.textContent = data.reply_text || '';
-    replyEl.style.display = data.reply_text ? '' : 'none';
-
-    const player = document.getElementById('va-audio-player');
-    if (data.audio_b64) {
-      const blob = b64ToBlob(data.audio_b64, 'audio/mpeg');
-      player.src = URL.createObjectURL(blob);
-      player.play().catch(() => {});
-    }
-
-    const body = document.getElementById('va-latency-body');
-    body.innerHTML = '';
-    const latency = data.latency_ms || {};
-    for (const [stage, ms] of Object.entries(latency)) {
-      if (stage === 'total_ms') continue;
-      body.innerHTML += `<tr><td>${stage}</td><td>${ms}</td></tr>`;
-    }
-    if ('total_ms' in latency) {
-      body.innerHTML += `<tr><td class="total">total</td><td class="total">${latency.total_ms}</td></tr>`;
-    }
-  }
 </script>
+
 </body>
 </html>
