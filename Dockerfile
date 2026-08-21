@@ -28,6 +28,7 @@ COPY orchestration_pipeline.py orchestration_graph.py ./
 COPY voice_agent_pipeline.py voice_agent_ws.py ./
 COPY intelligence_pipeline.py usage_tracking.py ./
 COPY integrations/ integrations/
+COPY telephony/ telephony/
 COPY static/ static/
 
 # Cloud Run writable temp + model cache
