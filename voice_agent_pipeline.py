@@ -46,6 +46,17 @@ class TurnTaker:
         self._silence_run = 0
         self._speech_run = 0
 
+    @property
+    def state(self) -> TurnState:
+        """Read-only: current turn state. Added for the telephony bridge's
+        barge-in detection (caller speech during TTS playback) — does not
+        change push_audio()'s behavior for existing callers."""
+        return self._state
+
+    @property
+    def is_speaking(self) -> bool:
+        return self._state == TurnState.SPEAKING
+
     def push_audio(self, chunk: bytes) -> bytes | None:
         self._buffer.extend(chunk)
         result = None
