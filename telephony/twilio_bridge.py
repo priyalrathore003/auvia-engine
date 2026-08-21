@@ -47,10 +47,12 @@ import io
 import logging
 import os
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 import numpy as np
 from fastapi import WebSocket, WebSocketDisconnect
 
+from telephony.latency_events import emit_event
 from telephony.mulaw import TWILIO_SAMPLE_RATE, pcm16_to_ulaw, resample_pcm16, twilio_ulaw_to_pipeline_pcm16
 from voice_agent_pipeline import TurnTaker, pcm16_to_wav_bytes
 
@@ -118,6 +120,8 @@ async def handle_twilio_stream(websocket: WebSocket) -> None:
 
             elif event == "mark":
                 logger.debug("[TWILIO] mark ack: %s", message.get("mark", {}).get("name"))
+                if session is not None:
+                    emit_event(session.call_id, "playback_mark_received")
 
             elif event == "stop":
                 logger.info("[TWILIO] call stopped")
@@ -137,6 +141,8 @@ async def _handle_inbound_media(session: TwilioCallSession, payload_b64: str) ->
     ulaw_bytes = base64.b64decode(payload_b64)
     pcm16_16k = twilio_ulaw_to_pipeline_pcm16(ulaw_bytes)
 
+    was_speaking = session.turn_taker.is_speaking
+
     # Naive barge-in: TurnTaker already sees every inbound frame regardless of
     # playback state, so its own state IS "is the caller making sound right
     # now" — no second VAD instance needed. Trigger only while we're actually
@@ -144,11 +150,25 @@ async def _handle_inbound_media(session: TwilioCallSession, payload_b64: str) ->
     # notices this flag and sends `clear` (see _stream_pcm_to_twilio).
     utterance_pcm = session.turn_taker.push_audio(pcm16_16k.tobytes())
 
+    if not was_speaking and session.turn_taker.is_speaking:
+        emit_event(session.call_id, "caller_speech_start")
+
     if session.is_playing and session.turn_taker.is_speaking:
         session.barge_in_requested = True
 
     if utterance_pcm is None:
         return
+
+    # user_speech_end uses the real last-voiced-frame timestamp (an honest
+    # stand-in for "the caller stopped talking"); endpoint_decision is "now"
+    # — push_audio() just returned synchronously, no I/O in between, so this
+    # is an accurate instant for when the 500ms trailing-silence threshold
+    # was actually met.
+    emit_event(
+        session.call_id, "user_speech_end",
+        ts=session.turn_taker.last_speech_frame_time or datetime.now(timezone.utc),
+    )
+    emit_event(session.call_id, "endpoint_decision")
 
     if session.turn_task is not None and not session.turn_task.done():
         # A turn is already being generated/played. Naive scope: drop this
@@ -172,13 +192,17 @@ async def _handle_turn(session: TwilioCallSession, utterance_pcm_16k: bytes) -> 
     lt = LatencyTracker()
 
     wav_bytes = pcm16_to_wav_bytes(utterance_pcm_16k)
+    emit_event(session.call_id, "stt_request_sent")
     stt_result = await asyncio.to_thread(transcribe_vocal, wav_bytes, "wav")
+    emit_event(session.call_id, "transcript_final")
     transcript = (stt_result.get("transcript") or "").strip()
     if not transcript:
         logger.info("[TWILIO] no speech detected in this turn")
         return
 
+    emit_event(session.call_id, "llm_request_sent")
     reply_text = await asyncio.to_thread(_generate_reply_sync, transcript)
+    emit_event(session.call_id, "llm_generation_complete")
 
     # _synthesize_speech_sync fully assembles the ElevenLabs mp3 response
     # (sync generator, consumed via to_thread — unmodified from the WS path)
@@ -186,7 +210,17 @@ async def _handle_turn(session: TwilioCallSession, utterance_pcm_16k: bytes) -> 
     # until the whole reply has been generated, not truly incremental
     # playback — a known, deliberate limitation for tonight (see module
     # docstring: no async TTS client yet).
+    emit_event(session.call_id, "tts_request_sent")
     mp3_bytes = await asyncio.to_thread(_synthesize_speech_sync, reply_text, lt)
+    # tts_first_byte_ms/tts_complete_ms fire inside a worker thread with no
+    # running event loop, so their real wall-clock instants are recovered
+    # from LatencyTracker.marks_wall_clock (see voice_agent_pipeline.py) and
+    # emitted here, after the fact, in the async caller — not approximated
+    # as "now" (which would be measurably late for a many-hundred-ms TTS call).
+    if "tts_first_byte_ms" in lt.marks_wall_clock:
+        emit_event(session.call_id, "tts_first_audio_byte", ts=lt.marks_wall_clock["tts_first_byte_ms"])
+    if "tts_complete_ms" in lt.marks_wall_clock:
+        emit_event(session.call_id, "tts_last_chunk_received", ts=lt.marks_wall_clock["tts_complete_ms"])
     if not mp3_bytes:
         logger.warning("[TWILIO] TTS produced no audio for this turn")
         return
@@ -208,6 +242,7 @@ async def _stream_pcm_to_twilio(session: TwilioCallSession, pcm16: np.ndarray, s
 
     session.is_playing = True
     session.barge_in_requested = False
+    first_frame_sent = False
     try:
         for start in range(0, len(pcm_8k), TWILIO_FRAME_SAMPLES):
             if session.barge_in_requested:
@@ -225,6 +260,12 @@ async def _stream_pcm_to_twilio(session: TwilioCallSession, pcm16: np.ndarray, s
                 "streamSid": session.stream_sid,
                 "media": {"payload": base64.b64encode(ulaw_bytes).decode()},
             })
+            if not first_frame_sent:
+                # This IS the honest phone-path equivalent of "audio begins
+                # reaching the caller" — the WS path has no matching signal
+                # (see scripts/compare_transports.py).
+                emit_event(session.call_id, "playback_start")
+                first_frame_sent = True
 
         await session.websocket.send_json({
             "event": "mark",
