@@ -1,150 +1,101 @@
 """
-dsp_pipeline.py
----------------
-Core DSP (Digital Signal Processing) pipeline for Auvia audio enhancement.
-
-Provides the `apply_timbre_enhancement` function that performs two-stage
-vocal enhancement: noise reduction + spectral shaping.
+dsp_pipeline.py — Auvia Engine
+Accepts WAV or MP3 bytes, returns enhanced WAV bytes.
+MP3 support requires ffmpeg (included in Dockerfile).
 """
 
-import logging
+import io
 import os
 import tempfile
 
+import librosa
+import noisereduce as nr
 import numpy as np
 import soundfile as sf
 
-logger = logging.getLogger("auvia_dsp")
 
-
-def apply_timbre_enhancement(input_bytes: bytes) -> bytes:
+def apply_timbre_enhancement(input_bytes: bytes, input_format: str = "wav") -> bytes:
     """
-    Two-stage vocal enhancement pipeline.
+    Two-stage DSP pipeline:
+      1. Noise reduction    — noisereduce spectral gating
+      2. Spectral shaping   — librosa STFT EQ
+         · Sub-bass roll-off : < 80 Hz  × 0.3
+         · Low-mid warmth    : 150–500 Hz × 1.4
+         · Presence lift     : 2–5 kHz  × 1.15
+         · Peak normalize    : −1 dBFS, 16-bit PCM WAV
 
-    Stage 1 — Noise Reduction
-        Spectral gating via noisereduce to remove room noise, mic hiss,
-        AC hum, and breath noise.
-
-    Stage 2 — Spectral Shaping
-        Single STFT pass that:
-          - Warms low-mids (150–500 Hz × 1.4)
-          - Lifts presence (2–5 kHz × 1.15)
-          - Rolls off sub-bass rumble (< 80 Hz × 0.3)
-
-    The result is peak-normalised to −1 dBFS and written as 16-bit PCM WAV.
-
-    Args:
-        input_bytes: Raw WAV file bytes.
-
-    Returns:
-        Processed WAV file bytes.
-
-    Raises:
-        ValueError: If the decoded audio is silent or corrupt.
+    Input:  raw bytes (WAV or MP3)
+    Output: enhanced WAV bytes (always WAV out — safe, lossless)
     """
-    import noisereduce as nr
+    # ── Load audio ────────────────────────────────────────────────────────────
+    # librosa handles WAV and MP3 (MP3 requires ffmpeg in PATH)
+    suffix = f".{input_format.lower().replace('audio/', '')}"
+    if "mpeg" in suffix or "mp3" in suffix:
+        suffix = ".mp3"
+    else:
+        suffix = ".wav"
 
-    # Write input bytes to a temp file so soundfile can read it
-    tmp_in = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    tmp_in.write(input_bytes)
-    tmp_in.close()
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(input_bytes)
+        tmp_path = tmp.name
 
     try:
-        # Read audio
-        audio, sr = sf.read(tmp_in.name)
-    except Exception as exc:
-        os.unlink(tmp_in.name)
-        raise ValueError(f"Failed to decode audio: {exc}") from exc
-
-    if audio is None or (isinstance(audio, np.ndarray) and audio.size == 0):
-        os.unlink(tmp_in.name)
-        raise ValueError("Decoded audio is empty — possible corrupt input.")
-
-    # Ensure 2D array for consistent processing
-    if audio.ndim == 1:
-        audio = audio.reshape(-1, 1)
-
-    # ------------------------------------------------------------------
-    # Stage 1 — Noise Reduction (spectral gating)
-    # ------------------------------------------------------------------
-    reduced = np.zeros_like(audio)
-    for ch in range(audio.shape[1]):
-        reduced[:, ch] = nr.reduce_noise(
-            y=audio[:, ch],
-            sr=sr,
-            prop_decrease=0.85,
-            n_fft=2048,
-            win_length=2048,
-            hop_length=512,
-            n_std_thresh_stationary=1.5,
-        )
-
-    # ------------------------------------------------------------------
-    # Stage 2 — Spectral Shaping (STFT-based EQ)
-    # ------------------------------------------------------------------
-    from librosa.core import istft, stft
-
-    n_fft = 2048
-    hop_length = 512
-    win_length = 2048
-    freqs = np.fft.rfftfreq(n_fft, d=1.0 / sr)
-
-    shaped = np.zeros_like(reduced)
-    for ch in range(reduced.shape[1]):
-        D = stft(
-            reduced[:, ch],
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
-        )
-
-        # Build gain mask
-        gain = np.ones_like(freqs)
-
-        # Sub-bass roll-off (< 80 Hz × 0.3)
-        gain[freqs < 80] = 0.3
-
-        # Low-mid warmth (150–500 Hz × 1.4)
-        mask_low_mid = (freqs >= 150) & (freqs <= 500)
-        gain[mask_low_mid] = 1.4
-
-        # Presence lift (2–5 kHz × 1.15)
-        mask_presence = (freqs >= 2000) & (freqs <= 5000)
-        gain[mask_presence] = 1.15
-
-        # Apply gain (broadcast across all frames)
-        D_shaped = D * gain[:, np.newaxis]
-
-        # ISTFT back to time domain
-        shaped[:, ch] = istft(
-            D_shaped,
-            hop_length=hop_length,
-            win_length=win_length,
-            length=len(reduced[:, ch]),
-        )
-
-    # ------------------------------------------------------------------
-    # Peak normalise to −1 dBFS
-    # ------------------------------------------------------------------
-    peak = np.max(np.abs(shaped))
-    if peak > 0:
-        target = 10 ** (-1.0 / 20)  # −1 dBFS linear
-        shaped = shaped * (target / peak)
-
-    # Clip to prevent overshoot
-    shaped = np.clip(shaped, -1.0, 1.0)
-
-    # ------------------------------------------------------------------
-    # Write output WAV to bytes
-    # ------------------------------------------------------------------
-    tmp_out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    tmp_out.close()
-    try:
-        sf.write(tmp_out.name, shaped, sr, subtype="PCM_16")
-        with open(tmp_out.name, "rb") as f:
-            output_bytes = f.read()
+        y, sr = librosa.load(tmp_path, sr=None, mono=False)
     finally:
-        os.unlink(tmp_out.name)
-        os.unlink(tmp_in.name)
+        os.unlink(tmp_path)
 
-    return output_bytes
+    # Ensure 2D (channels, samples)
+    if y.ndim == 1:
+        y = y[np.newaxis, :]
+
+    enhanced_channels = []
+
+    for channel in y:
+        # ── Stage 1: Noise reduction ──────────────────────────────────────────
+        reduced = nr.reduce_noise(
+            y=channel,
+            sr=sr,
+            n_fft=2048,
+            hop_length=512,
+            prop_decrease=0.75,
+        )
+
+        # ── Stage 2: Spectral shaping ─────────────────────────────────────────
+        D    = librosa.stft(reduced, n_fft=2048, hop_length=512)
+        mag  = np.abs(D)
+        phase = np.angle(D)
+
+        freqs = np.fft.rfftfreq(2048, d=1.0 / sr)   # shape: (1025,)
+        gain  = np.ones_like(freqs)
+
+        # Sub-bass roll-off
+        gain[freqs < 80] = 0.3
+        # Low-mid warmth
+        gain[(freqs >= 150) & (freqs <= 500)] = 1.4
+        # Presence lift
+        gain[(freqs >= 2000) & (freqs <= 5000)] = 1.15
+
+        gain_col   = gain[:, np.newaxis]              # broadcast over time
+        mag_shaped = mag * gain_col
+        D_shaped   = mag_shaped * np.exp(1j * phase)
+
+        shaped = librosa.istft(D_shaped, hop_length=512, length=len(reduced))
+
+        # ── Peak normalize to −1 dBFS ─────────────────────────────────────────
+        peak = np.max(np.abs(shaped))
+        if peak > 0:
+            target = 10 ** (-1.0 / 20)           # −1 dBFS
+            shaped = shaped * (target / peak)
+
+        enhanced_channels.append(shaped)
+
+    # ── Reconstruct + output as WAV ───────────────────────────────────────────
+    enhanced = np.stack(enhanced_channels, axis=0)  # (channels, samples)
+    if enhanced.shape[0] == 1:
+        enhanced = enhanced[0]                       # mono → 1D
+    else:
+        enhanced = enhanced.T                        # stereo → (samples, channels)
+
+    buf = io.BytesIO()
+    sf.write(buf, enhanced, sr, format="WAV", subtype="PCM_16")
+    return buf.getvalue()

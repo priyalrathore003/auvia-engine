@@ -1,0 +1,11 @@
+{
+  "name": "auvia-engine-worker",
+  "private": true,
+  "description": "Cloudflare Worker: reverse-proxies auviaengine.com to the Cloud Run backend",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.120.0"
+  }
+}

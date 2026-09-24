@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auvia Engine — Audio Intelligence Infrastructure</title>
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/favicon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512.png">
+<link rel="manifest" href="/static/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #07070F;
+    --surface:     #0D0D1A;
+    --surface2:    #13132080;
+    --border:      #1E1E35;
+    --accent:      #C026D3;
+    --accent2:     #4F46E5;
+    --accent-glow: #C026D340;
+    --accent-dim:  #C026D330;
+    --brand-gradient: linear-gradient(135deg, #FF6B9D, #9C27B0, #4F46E5);
+    --text:        #E2E2EE;
+    --muted:       #52526B;
+    --success:     #10B981;
+    --error:       #EF4444;
+    --warn:        #F59E0B;
+  }
+
+  html { scroll-behavior: smooth; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+
+  h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.01em; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  .gradient-text {
+    background: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ── Entrance animations ── */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── Nav ── */
+  header.topnav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    background: rgba(7,7,15,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--text); }
+  .logo-text span { color: var(--accent); }
+
+  .topnav-links { display: flex; gap: 30px; align-items: center; }
+  .topnav-links a {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .topnav-links a:hover { color: var(--text); }
+
+  @media (max-width: 700px) { .topnav-links { display: none; } }
+
+  /* ── Buttons ── */
+  .btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 24px;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--brand-gradient);
+    color: #fff;
+    box-shadow: 0 0 32px var(--accent-glow);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 46px var(--accent-glow); }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative;
+    padding: 110px 0 80px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  #hero-waveform {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    opacity: 0.22;
+    z-index: 0;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 35%, black 65%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, black 35%, black 65%, transparent);
+    pointer-events: none;
+  }
+
+  #hero-waveform .wbar {
+    width: 4px;
+    min-height: 6px;
+    background: var(--brand-gradient);
+    border-radius: 2px;
+    animation: wave-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes wave-pulse {
+    0%, 100% { transform: scaleY(0.18); }
+    50%      { transform: scaleY(1); }
+  }
+
+  .hero-content { position: relative; z-index: 1; }
+
+  .hero-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid #C026D340;
+    border-radius: 20px;
+    padding: 5px 14px;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 {
+    font-size: 56px;
+    font-weight: 700;
+    max-width: 800px;
+    margin: 0 auto 20px;
+    line-height: 1.08;
+  }
+
+  .hero .subline {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 600px;
+    margin: 0 auto 36px;
+  }
+
+  .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 36px; }
+    .hero { padding: 80px 0 56px; }
+  }
+
+  /* ── Social proof ── */
+  .social-proof {
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .social-proof-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .partner-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    align-items: center;
+  }
+  .partner-strip span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .partner-strip span:hover { opacity: 1; color: var(--text); }
+
+  /* ── Sections ── */
+  section { padding: 80px 0; border-top: 1px solid var(--border); }
+
+  .section-eyebrow {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .section-title { font-size: 30px; font-weight: 600; margin-bottom: 14px; }
+  .section-sub { color: var(--muted); max-width: 560px; margin-bottom: 44px; }
+
+  /* ── Demo ── */
+  #demo-drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 14px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--accent-dim);
+    transition: all 0.2s;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  #demo-drop-zone:hover, #demo-drop-zone.drag-over {
+    border-color: transparent;
+    background: #2D1B6945;
+  }
+
+  #demo-drop-zone:hover::before, #demo-drop-zone.drag-over::before {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: var(--brand-gradient);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  #demo-file-input { display: none; }
+
+  .demo-drop-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .demo-drop-sub { font-size: 13px; color: var(--muted); }
+
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  @media (max-width: 860px) { .demo-grid { grid-template-columns: 1fr; } }
+
+  .demo-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    min-height: 200px;
+  }
+
+  .demo-panel-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .latency-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--success);
+    background: #10B98115;
+    border: 1px solid #10B98140;
+    border-radius: 10px;
+    padding: 1px 7px;
+  }
+
+  .demo-idle { color: var(--muted); font-size: 13px; }
+
+  /* Skeleton loader */
+  .skeleton-block {
+    height: 14px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--surface2) 25%, #2a2a4560 37%, var(--surface2) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    margin-bottom: 10px;
+  }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+  .demo-bars { display: flex; align-items: flex-end; gap: 3px; height: 20px; margin-bottom: 12px; }
+  .demo-bars .bar { width: 3px; background: var(--accent); border-radius: 2px; animation: pulse-bar 0.8s ease-in-out infinite; }
+  .demo-bars .bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .demo-bars .bar:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+  .demo-bars .bar:nth-child(3) { height: 20px; animation-delay: 0.2s; }
+  .demo-bars .bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+  .demo-bars .bar:nth-child(5) { height: 8px; animation-delay: 0.4s; }
+  @keyframes pulse-bar { 0%, 100% { transform: scaleY(0.4); opacity: 0.5; } 50% { transform: scaleY(1.0); opacity: 1.0; } }
+
+  .demo-panel audio {
+    width: 100%;
+    height: 36px;
+    margin: 10px 0;
+    accent-color: var(--accent);
+    filter: invert(1) hue-rotate(200deg) saturate(0.6);
+  }
+
+  .demo-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid #C026D340;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .demo-download-btn:hover { background: #2D1B6945; }
+
+  .demo-error { color: var(--error); font-size: 13px; }
+
+  .intel-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .intel-row:last-child { border-bottom: none; }
+  .intel-row .k { color: var(--muted); }
+  .intel-row .v { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+
+  .quality-score {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--success);
+    margin-bottom: 4px;
+  }
+
+  .demo-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .demo-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .demo-note { font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+
+  .studio-link { text-align: center; margin-top: 28px; font-size: 13px; color: var(--muted); }
+
+  /* ── Features ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+
+  @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr; } }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+  }
+  .feature-card:hover {
+    box-shadow: 0 0 44px var(--accent-glow);
+    transform: translateY(-3px);
+    border-color: #C026D355;
+  }
+
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--brand-gradient);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .feature-card h3 { font-size: 16px; margin-bottom: 8px; }
+  .feature-card p { font-size: 13px; color: var(--muted); }
+
+  /* ── API section ── */
+  .api-cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  @media (max-width: 800px) { .api-cta-grid { grid-template-columns: 1fr; } }
+
+  pre.code-snippet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  pre .tok-key { color: #7DD3FC; } pre .tok-str { color: #86EFAC; }
+  pre .tok-num { color: #FCA5A5; } pre .tok-comment { color: var(--muted); }
+  pre .tok-flag { color: #A78BFA; }
+
+  /* ── Pricing ── */
+  .billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin: -20px 0 44px; }
+  .billing-label { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .billing-label.active { color: var(--text); }
+  .save-badge { font-size: 10.5px; background: var(--accent-dim); color: var(--accent); padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+  .toggle-switch {
+    width: 46px; height: 26px; border-radius: 20px;
+    background: var(--surface2); border: 1px solid var(--border);
+    position: relative; cursor: pointer; padding: 0;
+  }
+  .toggle-switch.on { background: var(--brand-gradient); border-color: transparent; }
+  .toggle-knob {
+    position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: #fff; transition: transform 0.2s ease;
+  }
+  .toggle-switch.on .toggle-knob { transform: translateX(20px); }
+
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 860px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 26px;
+    position: relative;
+  }
+
+  .price-card.featured {
+    border: 2px solid transparent;
+    background-image: linear-gradient(var(--surface), var(--surface)), var(--brand-gradient);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    box-shadow: 0 0 50px var(--accent-glow);
+  }
+
+  .featured-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--brand-gradient); color: #fff;
+    font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; font-weight: 600;
+    letter-spacing: 0.06em; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;
+  }
+
+  .price-tier { font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .price-amount { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; margin-bottom: 4px; }
+  .price-amount span { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .billed-note { font-size: 11px; color: var(--success); margin-bottom: 4px; }
+  .price-list { list-style: none; margin: 22px 0 26px; padding: 0; }
+  .price-list li { font-size: 13px; color: var(--muted); padding: 6px 0; padding-left: 20px; position: relative; }
+  .price-list li::before { content: '✓'; position: absolute; left: 0; color: var(--success); }
+
+  .plan-btn { width: 100%; justify-content: center; text-align: center; }
+  .plan-btn-current { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); cursor: default; padding: 13px; border-radius: 10px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; }
+
+  /* ── About ── */
+  .about-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .about-block p { font-size: 16px; color: var(--text); line-height: 1.7; }
+  .about-block p strong { color: var(--accent); }
+
+  /* ── Footer ── */
+  footer {
+    padding: 48px 0 60px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .footer-logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+  .footer-tagline { font-size: 12.5px; color: var(--muted); margin-bottom: 24px; }
+
+  .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .footer-links a { color: var(--muted); font-size: 13px; }
+  .footer-links a:hover { color: var(--accent); }
+
+  .footer-powered-by {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.7;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <a href="/" class="logo" style="text-decoration:none">
+    <img src="/static/logo.png" alt="Auvia Engine" style="height:40px;width:40px;border-radius:50%">
+  </a>
+  <nav class="topnav-links">
+    <a href="#product">Product</a>
+    <a href="/api">API</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/studio">Studio</a>
+  </nav>
+</header>
+
+<!-- Hero -->
+<section class="hero" id="product" style="border-top:none">
+  <div id="hero-waveform"></div>
+  <div class="wrap hero-content">
+    <span class="hero-badge">Open Beta · No API Key Required Yet</span>
+    <h1>Audio Intelligence.<br><span class="gradient-text">Built for Creators.</span></h1>
+    <p class="subline">Upload real audio. Get back enhanced output, acoustic insights, and AI-generated music.</p>
+    <div class="hero-ctas">
+      <a href="#demo" class="btn-primary">Try Free</a>
+      <a href="/api" class="btn-secondary">View API</a>
+    </div>
+  </div>
+</section>
+
+<!-- Social proof -->
+<section class="social-proof" style="padding-top:0; padding-bottom:32px;">
+  <div class="wrap">
+    <div class="social-proof-label">Built on</div>
+    <div class="partner-strip">
+      <span>Google Cloud</span>
+      <span>ElevenLabs</span>
+      <span>Sarvam AI</span>
+      <span>Gemini</span>
+      <span>LangGraph</span>
+    </div>
+  </div>
+</section>
+
+<!-- Live demo -->
+<section id="demo">
+  <div class="wrap reveal">
+    <div class="section-eyebrow">Live Demo</div>
+    <h2 class="section-title">Upload audio, see three outputs at once</h2>
+    <p class="section-sub">No signup. This runs against the real API, right now.</p>
+
+    <div id="demo-drop-zone" onclick="document.getElementById('demo-file-input').click()">
+      <input type="file" id="demo-file-input" accept=".wav,.mp3,audio/wav,audio/mpeg">
+      <div class="demo-drop-title" id="demo-drop-title">Drop audio here or click to browse</div>
+      <div class="demo-drop-sub">.wav or .mp3 &nbsp;·&nbsp; processed live via /enhance-audio, /intelligence, and /orchestrate</div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-panel" id="panel-enhance">
+        <div class="demo-panel-label"><span>Enhanced Audio</span></div>
+        <div id="body-enhance"><div class="demo-idle">Upload a file to run this live.</div></div>
+      </div>
+      <div class="demo-panel" id="panel-intelligence">
+        <div class="demo-panel-label"><span>Intelligence Report</span></div>
+        <div id="body-intelligence"><div class="demo-idle">Pitch, key, tempo, and a quality score.</div></div>
+      </div>
+      <div class="demo-panel" id="panel-orchestrate">
+        <div class="demo-panel-label"><span>AI Backing Track</span></div>
+        <div id="body-orchestrate"><div class="demo-idle">15s preview · full length via the API.</div></div>
+      </div>
+    </div>
+
+    <div class="studio-link">Want the full interactive tool — mood control, downloads, the real-time voice agent? <a href="/studio">Open the Studio →</a></div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="wrap reveal">
+    <div class="section-eyebrow">Capabilities</div>
+    <h2 class="section-title">Four engines, one API</h2>
+    <p class="section-sub">Each endpoint is independently useful. Together they cover the full loop from raw audio to finished, intelligent output.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 9h2l2-6 3 12 2-9 2 6h3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Audio Enhancement Engine</h3>
+        <p>Production-grade DSP + AI processing — noise reduction, spectral EQ, peak normalization, agentic reasoning about what a recording needs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="#fff" stroke-width="1.5"/><path d="M9 5.5v3.5l2.5 2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Acoustic Intelligence</h3>
+        <p>Structured data from any audio input — pitch, note, key, tempo, noise floor, dynamic range, and a 0–100 quality score, as clean JSON.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Content Generation</h3>
+        <p>AI backing tracks matched to input audio — tempo- and key-locked instrumentals composed around a vocal recording, mixed and ready.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="6.5" y="2" width="5" height="9" rx="2.5" stroke="#fff" stroke-width="1.5"/><path d="M4 9a5 5 0 0010 0M9 14v2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3>Voice Agent</h3>
+        <p>Real-time conversational audio AI — local VAD turn-taking, cascaded STT → LLM → TTS, sub-second latency measured per stage. <a href="/studio">Try it →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- API -->
+<section id="api-section">
+  <div class="wrap reveal">
+    <div class="section-eyebrow">For Developers</div>
+    <h2 class="section-title">Built for developers</h2>
+    <div class="api-cta-grid">
+      <div>
+        <p class="section-sub" style="margin-bottom:20px">No SDK, no boilerplate — every endpoint takes a raw file upload and returns JSON. Open beta, no API key required yet.</p>
+        <a href="/api" class="btn-secondary">Read the full API reference →</a>
+      </div>
+      <pre class="code-snippet"><span class="tok-comment"># structured acoustic analysis, no LLM</span>
+curl -X POST https://auviaengine.com/intelligence \
+  -F <span class="tok-flag">file</span>=@vocal.wav
+
+<span class="tok-comment"># →</span>
+{
+  <span class="tok-key">"pitch_hz"</span>: <span class="tok-num">261.63</span>,
+  <span class="tok-key">"note"</span>: <span class="tok-str">"C4"</span>,
+  <span class="tok-key">"key"</span>: <span class="tok-str">"C major"</span>,
+  <span class="tok-key">"tempo_bpm"</span>: <span class="tok-num">120.0</span>,
+  <span class="tok-key">"quality_score"</span>: <span class="tok-num">87</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing">
+  <div class="wrap reveal">
+    <div class="section-eyebrow">Pricing</div>
+    <h2 class="section-title">Simple, usage-based plans</h2>
+    <p class="section-sub">Start free. Upgrade the moment audio generation becomes something you rely on.</p>
+
+    <div class="billing-toggle">
+      <span class="billing-label active" id="label-monthly">Monthly</span>
+      <button class="toggle-switch" id="billing-switch" onclick="toggleBilling()" aria-label="Toggle annual billing">
+        <span class="toggle-knob"></span>
+      </button>
+      <span class="billing-label" id="label-annual">Annual <span class="save-badge">Save 20%</span></span>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-tier">Free</div>
+        <div class="price-amount">₹0<span>/mo</span></div>
+        <ul class="price-list">
+          <li>Unlimited enhance &amp; intelligence</li>
+          <li>3 AI orchestrations / device</li>
+          <li>Real-time voice agent access</li>
+          <li>Community support</li>
+        </ul>
+        <button class="plan-btn-current">Current plan</button>
+      </div>
+
+      <div class="price-card featured">
+        <div class="featured-badge">Most Popular</div>
+        <div class="price-tier">Pro</div>
+        <div class="price-amount"><span class="amount-monthly">₹499</span><span class="amount-annual" style="display:none">₹399</span><span>/mo</span></div>
+        <div class="billed-note" style="display:none">billed ₹4,790/year</div>
+        <ul class="price-list">
+          <li>Everything in Free</li>
+          <li><strong style="color:var(--text)">Unlimited</strong> AI orchestrations</li>
+          <li>Higher API rate limits</li>
+          <li>Priority processing queue</li>
+        </ul>
+        <button class="plan-btn btn-primary" onclick="upgradeToPlan('pro')">Upgrade to Pro</button>
+      </div>
+
+      <div class="price-card">
+        <div class="price-tier">Studio</div>
+        <div class="price-amount"><span class="amount-monthly">₹1,499</span><span class="amount-annual" style="display:none">₹1,199</span><span>/mo</span></div>
+        <div class="billed-note" style="display:none">billed ₹14,390/year</div>
+        <ul class="price-list">
+          <li>Everything in Pro</li>
+          <li>Highest rate limits</li>
+          <li>Custom voice / model tuning</li>
+        </ul>
+        <button class="plan-btn btn-secondary" onclick="upgradeToPlan('studio')">Upgrade to Studio</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- About -->
+<section id="about">
+  <div class="wrap reveal">
+    <div class="section-eyebrow" style="text-align:center">About</div>
+    <div class="about-block">
+      <p>Built by <strong>Priyal Rathore</strong> — AI engineer and trained classical vocalist. The domain expertise is the product.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-logo">
+      <img src="/static/logo.png" alt="Auvia Engine" style="height:28px;width:28px;border-radius:50%">
+      <span class="logo-text">Auvia<span> Engine</span></span>
+    </div>
+    <div class="footer-tagline">Audio intelligence infrastructure for creators.</div>
+    <div class="footer-links">
+      <a href="/studio">Studio</a>
+      <a href="/api">API</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://github.com/priyalrathore003/auvia-engine">GitHub</a>
+      <a href="https://linkedin.com/in/priyalrathore17">LinkedIn</a>
+    </div>
+    <div>&copy; Auvia Engine — Built by <a href="https://linkedin.com/in/priyalrathore17">Priyal Rathore</a></div>
+    <div class="footer-powered-by">Powered by Google Cloud · ElevenLabs · Sarvam AI · Gemini · LangGraph</div>
+  </div>
+</footer>
+
+<script>
+  const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8080'
+    : window.location.origin;
+
+  const DEMO_ORCHESTRATE_MAX_SECONDS = 15; // bounds ElevenLabs Music credit spend on the public demo
+
+  function getDeviceId() {
+    let id = localStorage.getItem('auvia_device_id');
+    if (!id) {
+      id = 'dev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+      localStorage.setItem('auvia_device_id', id);
+    }
+    return id;
+  }
+
+  // ── Hero waveform (pure CSS animation, JS only generates the bars) ────────
+  (function renderHeroWaveform() {
+    const container = document.getElementById('hero-waveform');
+    const barCount = 56;
+    let html = '';
+    for (let i = 0; i < barCount; i++) {
+      const height = 20 + Math.round(Math.random() * 60);
+      const delay = (Math.random() * 1.6).toFixed(2);
+      html += `<div class="wbar" style="height:${height}px; animation-delay:${delay}s"></div>`;
+    }
+    container.innerHTML = html;
+  })();
+
+  // ── Scroll-triggered entrance animations ───────────────────────────────────
+  (function setupRevealObserver() {
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => observer.observe(el));
+  })();
+
+  // ── Pricing: annual toggle ─────────────────────────────────────────────────
+  let billingPeriod = 'monthly';
+
+  function toggleBilling() {
+    billingPeriod = billingPeriod === 'monthly' ? 'annual' : 'monthly';
+    const isAnnual = billingPeriod === 'annual';
+
+    document.getElementById('billing-switch').classList.toggle('on', isAnnual);
+    document.getElementById('label-monthly').classList.toggle('active', !isAnnual);
+    document.getElementById('label-annual').classList.toggle('active', isAnnual);
+
+    document.querySelectorAll('.amount-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+    document.querySelectorAll('.amount-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+    document.querySelectorAll('.billed-note').forEach(el => el.style.display = isAnnual ? 'block' : 'none');
+  }
+
+  async function upgradeToPlan(plan) {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+    try {
+      const form = new FormData();
+      form.append('plan', plan);
+      form.append('billing', billingPeriod);
+      const res = await fetch(API_BASE + '/api/create-subscription', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Could not start checkout');
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      alert('Could not start checkout: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  // ── Live demo ───────────────────────────────────────────────────────────────
+  const dropZone = document.getElementById('demo-drop-zone');
+  const fileInput = document.getElementById('demo-file-input');
+
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) runLiveDemo(e.target.files[0]); });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) runLiveDemo(e.dataTransfer.files[0]);
+  });
+
+  function skeletonHtml() {
+    return `
+      <div class="demo-bars"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+      <div class="skeleton-block" style="width:70%"></div>
+      <div class="skeleton-block" style="width:45%"></div>
+      <div class="skeleton-block" style="width:60%"></div>
+    `;
+  }
+
+  function runLiveDemo(file) {
+    document.getElementById('demo-drop-title').textContent = file.name;
+    ['enhance', 'intelligence'].forEach(id => {
+      document.getElementById('body-' + id).innerHTML = skeletonHtml();
+      const badge = document.querySelector(`#panel-${id} .latency-badge`);
+      if (badge) badge.remove();
+    });
+    document.getElementById('body-orchestrate').innerHTML =
+      skeletonHtml() + `<div class="demo-note" id="orchestrate-stage-label">Analysing…</div>`;
+    const orchBadge = document.querySelector('#panel-orchestrate .latency-badge');
+    if (orchBadge) orchBadge.remove();
+
+    runEnhancePanel(file);
+    runIntelligencePanel(file);
+    runOrchestratePanel(file);
+  }
+
+  function setLatencyBadge(panelId, ms) {
+    const label = document.querySelector(`#panel-${panelId} .demo-panel-label`);
+    if (!label) return;
+    const seconds = (ms / 1000).toFixed(1);
+    const badge = document.createElement('span');
+    badge.className = 'latency-badge';
+    badge.textContent = seconds + 's';
+    label.appendChild(badge);
+  }
+
+  function downloadButtonHtml(url, filename) {
+    return `<a class="demo-download-btn" href="${url}" download="${filename}">⬇ Download</a>`;
+  }
+
+  async function runEnhancePanel(file) {
+    const start = performance.now();
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(API_BASE + '/enhance-audio', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Enhancement failed');
+
+      const blob = b64ToBlob(data.audio_b64, 'audio/wav');
+      const url = URL.createObjectURL(blob);
+      document.getElementById('body-enhance').innerHTML = `
+        <audio controls src="${url}"></audio>
+        ${downloadButtonHtml(url, data.filename || 'auvia_enhanced.wav')}
+        <div class="demo-note">${data.result || ''}</div>
+      `;
+      setLatencyBadge('enhance', performance.now() - start);
+    } catch (err) {
+      document.getElementById('body-enhance').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  async function runIntelligencePanel(file) {
+    const start = performance.now();
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(API_BASE + '/intelligence', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Analysis failed');
+
+      const tags = (data.recommended_processing || []).map(t => `<span class="demo-badge">${t}</span>`).join('');
+      document.getElementById('body-intelligence').innerHTML = `
+        <div class="quality-score">${data.quality_score}<span style="font-size:14px;color:var(--muted)">/100</span></div>
+        <div class="intel-row"><span class="k">Pitch</span><span class="v">${data.pitch_hz} Hz (${data.note || '—'})</span></div>
+        <div class="intel-row"><span class="k">Key</span><span class="v">${data.key}</span></div>
+        <div class="intel-row"><span class="k">Tempo</span><span class="v">${data.tempo_bpm} BPM</span></div>
+        <div class="intel-row"><span class="k">Noise floor</span><span class="v">${data.noise_floor_db} dB</span></div>
+        <div class="intel-row"><span class="k">Dynamic range</span><span class="v">${data.dynamic_range_db} dB</span></div>
+        <div class="demo-badges">${tags}</div>
+      `;
+      setLatencyBadge('intelligence', performance.now() - start);
+    } catch (err) {
+      document.getElementById('body-intelligence').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
+    }
+  }
+
+  function orchestrateStageLabel(elapsedSec) {
+    if (elapsedSec < 3) return 'Analysing…';
+    if (elapsedSec < 12) return 'Generating…';
+    return 'Mixing…';
+  }
+
+  async function runOrchestratePanel(file) {
+    const start = performance.now();
+    const stageTimer = setInterval(() => {
+      const elapsed = (performance.now() - start) / 1000;
+      const stageEl = document.getElementById('orchestrate-stage-label');
+      if (!stageEl) return;
+      let text = orchestrateStageLabel(elapsed);
+      if (elapsed > 15) text += ' (longer clips can take up to ~30s)';
+      stageEl.textContent = text;
+    }, 500);
+
+    try {
+      const trimmedBlob = await trimAudioFile(file, DEMO_ORCHESTRATE_MAX_SECONDS);
+      const form = new FormData();
+      form.append('file', trimmedBlob, 'demo.wav');
+      const res = await fetch(API_BASE + '/orchestrate', {
+        method: 'POST', body: form, headers: { 'X-Device-Id': getDeviceId() },
+      });
+      const data = await res.json();
+
+      if (res.status === 402 || data.status === 'upgrade_required') {
+        document.getElementById('body-orchestrate').innerHTML =
+          `<div class="demo-note">You've used your 3 free orchestrations. <a href="/pricing">Upgrade to Pro →</a></div>`;
+        return;
+      }
+      if (!res.ok || data.status !== 'success') throw new Error(data.detail || 'Orchestration failed');
+
+      const blob = b64ToBlob(data.audio_b64, 'audio/wav');
+      const url = URL.createObjectURL(blob);
+      document.getElementById('body-orchestrate').innerHTML = `
+        <audio controls src="${url}"></audio>
+        ${downloadButtonHtml(url, data.filename || 'auvia_orchestrated.wav')}
+        <div class="demo-note">${data.key || ''} · ${data.tempo_bpm ?? ''} BPM — 15s preview, full track via the API</div>
+      `;
+      setLatencyBadge('orchestrate', performance.now() - start);
+    } catch (err) {
+      document.getElementById('body-orchestrate').innerHTML = `<div class="demo-error">⚠ ${err.message}</div>`;
+    } finally {
+      clearInterval(stageTimer);
+    }
+  }
+
+  async function trimAudioFile(file, maxSeconds) {
+    const ctx = new AudioContext();
+    const arrayBuf = await file.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuf);
+    const blob = audioBufferToWavBlob(audioBuffer, maxSeconds);
+    await ctx.close();
+    return blob;
+  }
+
+  function audioBufferToWavBlob(audioBuffer, maxSeconds) {
+    const sampleRate = audioBuffer.sampleRate;
+    const maxSamples = Math.min(audioBuffer.length, Math.floor(maxSeconds * sampleRate));
+    const channelData = audioBuffer.getChannelData(0).slice(0, maxSamples);
+
+    const buffer = new ArrayBuffer(44 + channelData.length * 2);
+    const view = new DataView(buffer);
+
+    function writeString(offset, str) {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    }
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + channelData.length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, channelData.length * 2, true);
+
+    let offset = 44;
+    for (let i = 0; i < channelData.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, channelData[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  function b64ToBlob(b64, type) {
+    const bytes = atob(b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    return new Blob([arr], { type });
+  }
+</script>
+
+</body>
+</html>

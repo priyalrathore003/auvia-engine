@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — Auvia Engine</title>
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/static/favicon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/favicon-512.png">
+<link rel="manifest" href="/static/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070F; --surface: #0D0D1A; --surface2: #13132080; --border: #1E1E35;
+    --accent: #C026D3; --accent2: #4F46E5; --accent-glow: #C026D340; --accent-dim: #C026D330;
+    --brand-gradient: linear-gradient(135deg, #FF6B9D, #9C27B0, #4F46E5);
+    --text: #E2E2EE; --muted: #52526B; --success: #10B981; --error: #EF4444; --warn: #F59E0B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.7; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; }
+
+  header.topnav {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px; background: rgba(7,7,15,0.9); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--text); }
+  .logo-text span { color: var(--accent); }
+  .topnav-links { display: flex; gap: 28px; }
+  .topnav-links a { color: var(--muted); font-size: 13px; font-weight: 500; font-family: 'Space Grotesk', sans-serif; }
+  .topnav-links a:hover { color: var(--text); text-decoration: none; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 56px 32px 100px; }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+  .effective-date { color: var(--muted); font-size: 13px; font-family: 'JetBrains Mono', monospace; margin-bottom: 40px; }
+  h2 { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; margin: 36px 0 12px; color: var(--accent); }
+  p { color: var(--text); margin-bottom: 12px; }
+  ul { margin: 0 0 12px 20px; color: var(--text); }
+  li { margin-bottom: 6px; }
+  table.plan-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  table.plan-table th, table.plan-table td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  table.plan-table th { color: var(--muted); font-weight: 500; }
+  .note-box {
+    margin-top: 48px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px; font-size: 13px; color: var(--muted);
+  }
+  footer { padding: 24px 0; text-align: center; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); }
+  .footer-links { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .footer-links a { color: var(--muted); font-size: 12px; }
+  .footer-links a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="topnav">
+  <a href="/" class="logo">
+    <img src="/static/logo.png" alt="Auvia Engine" style="height:32px;width:32px;border-radius:50%">
+    <span class="logo-text">Auvia<span> Engine</span></span>
+  </a>
+  <nav class="topnav-links">
+    <a href="/#product">Product</a>
+    <a href="/api">API</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/studio">Studio</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Terms of Service</h1>
+  <div class="effective-date">Effective date: August 2026</div>
+
+  <p>These Terms govern your use of Auvia Engine (auviaengine.com), including the API, the Studio interface, and the public demo. By using the service, you agree to them.</p>
+
+  <h2>1. The service is provided "as is"</h2>
+  <p>Auvia Engine is provided on an "as is" and "as available" basis, without warranties of any kind, express or implied. Audio enhancement, acoustic intelligence, and AI-generated music are produced by automated and AI systems and may occasionally be inaccurate, imperfect, or unavailable due to upstream provider issues (ElevenLabs, Sarvam AI, Gemini, Groq, or our own infrastructure). We do not guarantee uninterrupted or error-free operation.</p>
+
+  <h2>2. You own your audio</h2>
+  <p>You retain all ownership rights to audio you upload or record. We do not claim ownership over your vocals, recordings, or the final mixed output. AI-generated instrumental backing tracks are provided for your use as part of the output of the service; you're responsible for confirming any usage rights required for your specific use case (e.g., commercial release) under the terms of the underlying AI providers.</p>
+
+  <h2>3. Acceptable use</h2>
+  <p>You may not upload, generate, or use the service to process:</p>
+  <ul>
+    <li>Illegal content of any kind</li>
+    <li>Content that infringes someone else's copyright or other intellectual property rights</li>
+    <li>Content intended to harass, defame, or impersonate a real person without consent</li>
+    <li>Malware or content intended to abuse, overload, or attack the service or third parties</li>
+  </ul>
+  <p>We reserve the right to suspend or terminate access for violations of this section.</p>
+
+  <h2>4. API usage &amp; rate limits</h2>
+  <p>API access is subject to rate limits that vary by plan (Free, Pro, Studio — see <a href="/pricing">Pricing</a>). We may throttle, queue, or reject requests that exceed your plan's limits, or that we reasonably believe are abusive or automated in a way that degrades service for other users. Rate limits and plan quotas may change as the product evolves; material changes will be reflected on the Pricing page.</p>
+
+  <h2>5. Payments &amp; subscriptions</h2>
+  <p>Paid plans (Pro, Studio) are billed monthly or annually in advance via Razorpay. Subscriptions renew automatically until cancelled. You can cancel at any time; cancellation stops future billing but does not itself trigger a refund for the current billing period except as described below.</p>
+
+  <h2>6. Refund policy</h2>
+  <p>If you're not satisfied with a paid plan, you may request a full refund within <strong>7 days</strong> of the original charge. Refund requests after 7 days are handled case-by-case. To request a refund, contact <a href="mailto:priyal@auviaengine.com">priyal@auviaengine.com</a> with your account email and payment reference.</p>
+
+  <h2>7. Limitation of liability</h2>
+  <p>To the maximum extent permitted by law, Auvia Engine and its operator are not liable for indirect, incidental, or consequential damages arising from use of the service, including loss of data, loss of business, or reliance on AI-generated output. Our total liability for any claim is limited to the amount you paid us in the 3 months preceding the claim.</p>
+
+  <h2>8. Changes to the service or these terms</h2>
+  <p>We may update these Terms or change, suspend, or discontinue parts of the service at any time. Material changes to these Terms will be reflected here with an updated effective date. Continued use of the service after a change constitutes acceptance of the updated Terms.</p>
+
+  <h2>9. Governing law</h2>
+  <p>These Terms are governed by the laws of India, without regard to conflict-of-law principles. Any disputes will be subject to the exclusive jurisdiction of the courts of India.</p>
+
+  <h2>10. Contact</h2>
+  <p>Questions about these Terms: <a href="mailto:priyal@auviaengine.com">priyal@auviaengine.com</a></p>
+
+  <div class="note-box">
+    This is standard-form boilerplate written to plainly reflect the policies you specified. It is not a substitute for review by a qualified lawyer — especially before relying on it for a service that processes real payments — and you should have one review it before treating it as final.
+  </div>
+</main>
+
+<footer>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/api">API Docs</a>
+    <a href="/studio">Studio</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </div>
+  <div>&copy; Auvia Engine</div>
+</footer>
+
+</body>
+</html>

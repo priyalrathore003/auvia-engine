@@ -39,6 +39,10 @@ Untitled
 # Docker
 *.log
 
+# Cloudflare Wrangler local state
+.wrangler/
+node_modules/
+
 # Jupyter
 .ipynb_checkpoints/google-cloud-sdk/
 google-cloud-sdk/

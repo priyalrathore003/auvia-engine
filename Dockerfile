@@ -1,28 +1,42 @@
+# Auvia Engine — GCP Cloud Run
 FROM python:3.11-slim
- 
-# ── System deps ───────────────────────────────────────────────────────────────
-# libsndfile1: required by soundfile at runtime (the actual C binding)
-# ffmpeg:      required by librosa for mp3/ogg decode (audioread backend)
-# No python3-setuptools here — let pip manage setuptools to avoid version conflicts
+
+WORKDIR /app
+
+# System deps: librosa (soundfile), MP3 decode (ffmpeg), gcc (webrtcvad C extension build)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     ffmpeg \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
- 
-WORKDIR /app
- 
-# ── Python deps ───────────────────────────────────────────────────────────────
-# CRITICAL ORDER: upgrade pip + setuptools BEFORE installing requirements.
-# librosa imports pkg_resources (part of setuptools) at module load time.
-# If setuptools is missing when the worker boots, every request crashes with
-# "No module named 'pkg_resources'" — which is exactly the bug we're fixing.
+
+# librosa imports pkg_resources at load time
 COPY requirements.txt .
-RUN pip install --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir -r requirements.txt
- 
-# ── App code (separate layer so code changes don't reinstall deps) ─────────────
-COPY . .
- 
-# Render sets PORT env var; default 10000 for local docker run
-ENV PORT=10000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Pre-download embedding model at build time into /tmp (avoids cold-start HF fetch)
+# /tmp is the only writable directory on Cloud Run
+ENV HF_HOME=/tmp/huggingface
+ENV TRANSFORMERS_CACHE=/tmp/huggingface
+ENV SENTENCE_TRANSFORMERS_HOME=/tmp/huggingface
+RUN mkdir -p /tmp/huggingface && python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" || echo "WARN: HF model pre-download failed (will lazy-load at runtime)"
+
+COPY main.py dsp_pipeline.py langgraph_orchestrator.py rag_storage.py ./
+COPY orchestration_pipeline.py orchestration_graph.py ./
+COPY voice_agent_pipeline.py voice_agent_ws.py ./
+COPY intelligence_pipeline.py usage_tracking.py ./
+COPY integrations/ integrations/
+COPY static/ static/
+
+# Cloud Run writable temp + model cache
+ENV PORT=8080
+ENV TEMP_DIR=/tmp/auvia
+ENV CHROMA_PERSIST_DIR=/tmp/chroma_db
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8080
+
+# Shell form so Cloud Run's injected $PORT is expanded
+CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1 --timeout-keep-alive 120
