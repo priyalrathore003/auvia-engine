@@ -14,7 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
@@ -395,6 +395,22 @@ async def voice_agent_ws(websocket: WebSocket):
     Sarvam STT → LLM → ElevenLabs TTS, spoken reply + latency breakdown out."""
     from voice_agent_ws import handle_voice_session
     await handle_voice_session(websocket)
+
+
+@app.post("/voice")
+async def twilio_voice_webhook():
+    """TwiML webhook for inbound Twilio calls — opens a bidirectional Media
+    Stream into /twilio-stream, bridging the call into the same voice agent
+    pipeline as /ws/voice-agent."""
+    from telephony.twilio_bridge import build_twiml_response
+    return Response(content=build_twiml_response(), media_type="text/xml")
+
+
+@app.websocket("/twilio-stream")
+async def twilio_stream_ws(websocket: WebSocket):
+    """Twilio Media Streams bridge — see telephony/twilio_bridge.py."""
+    from telephony.twilio_bridge import handle_twilio_stream
+    await handle_twilio_stream(websocket)
 
 
 def _serve_static_page(filename: str):

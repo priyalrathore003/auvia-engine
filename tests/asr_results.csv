@@ -1,0 +1,22 @@
+"# Normalization policy: lowercase, strip punctuation, collapse whitespace, spoken number-words -> digits (digit-by-digit runs kept as separate tokens, hundred/thousand/tens runs folded arithmetically, ordinals -> 1st/3rd/6th form). See scripts/asr_codec_experiment.py module docstring for full policy and known unhandled edge cases (spelled letters, email at/dot, Hindi script)."
+id,group,reference,wideband_transcript,narrowband_transcript,wideband_wer,narrowband_wer,delta
+1,A,I want to check the status of my recent order.,I want to check the status of my recent order.,I want to check the status of my recent order.,0.0,0.0,0.0
+2,A,Can you tell me when the refund will be processed?,Can you tell me when the refund will be processed?,कैन यू टेल मी व्हेन द रिफंड विल बी प्रोसेस्ड,0.0,1.0,1.0
+3,A,My account was charged twice this month.,My account was charged twice this month.,My account was charged twice this month.,0.0,0.0,0.0
+4,A,I would like to speak to someone about my plan.,I would like to speak to someone about my plan.,I would like to speak to someone about my plan.,0.0,0.0,0.0
+5,B,The sixth shipment was sent to the wrong address.,The sixth shipment was sent to the wrong address.,The sixth shipment was sent to the wrong address.,0.0,0.0,0.0
+6,B,"She said the fee was fifteen, not fifty.","She said the fee was 15, not 50.","She said the fee was 15, not 50.",0.0,0.0,0.0
+7,B,I think the thing is thicker than it should be.,I think the thing is thicker than it should be.,I think the thing is thicker than it should be.,0.0,0.0,0.0
+8,B,First class costs fifty five rupees for staff.,First class costs ₹55 for staff.,First class costs ₹55 for staff.,0.2857142857142857,0.2857142857142857,0.0
+9,C,"My card number is four one two seven, three three zero nine, six six one four, eight two zero five.",My card number is 4127330966148205.,My card number is four one two seven three three zero nine six six one four eight two zero five,0.8,0.0,-0.8
+10,C,The reference number is nine zero zero seven four three.,The reference number is 900743.,The reference number is 900743.,0.6,0.6,0.0
+11,C,My phone number is nine eight eight six seven four two three one zero.,My phone number is 9886742310.,My phone number is 9886742310.,0.7142857142857143,0.7142857142857143,0.0
+12,C,The amount was one thousand four hundred and sixteen rupees.,The amount was ₹1416.,The amount was ₹1416.,0.4,0.4,0.0
+13,C,"My date of birth is the third of November, two thousand and three.",My date of birth is the 3rd of November 2003.,My date of birth is the third of November 2003.,0.0,0.0,0.0
+14,D,The order ID is A S four seven B nine.,The order ID is AS 47B9.,The order ID is AS 47 B9.,0.6,0.6,0.0
+15,D,My email is priyal at auviaengine dot com.,My email is priyal@aviaengine.com.,My email is priyal@aviaengine.com.,0.375,0.375,0.0
+16,D,Please spell it: P R I Y A L.,Please spell it P R I Y A L.,Please spell it P R I Y A L,0.0,0.0,0.0
+17,D,"The code is M as in Mumbai, F as in Foxtrot, S as in Sierra.","The code is M as in Mumbai, F as in Foxtrot, S as in Sierra.","The code is M as in Mumbai, F as in Foxtrot, S as in Sierra.",0.0,0.0,0.0
+18,E,Mera order abhi tak deliver nahi hua hai.,मेरा ऑर्डर अभी तक डिलीवर नहीं हुआ है,मेरा ऑर्डर अभी तक डिलीवर नहीं हुआ है,1.0,1.0,0.0
+19,E,"Main payment kar chuki hoon, but status pending dikha raha hai.",मैं पेमेंट कर चुकी हूँ बट स्टेटस पेंडिंग दिखा रहा है,मैं पेमेंट कर चुकी हूँ बट स्टेटस पेंडिंग दिखा रहा है,1.0,1.0,0.0
+20,E,"Aap mujhe kal call kar sakte hain kya, around four baje?",आप मुझे कल कॉल कर सकते हैं क्या अराउंड फोर बजे,आप मुझे कल कॉल कर सकते हैं क्या अराउंड फोर बजे,1.0,1.0,0.0

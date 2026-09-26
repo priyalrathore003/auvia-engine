@@ -33,3 +33,6 @@ aiofiles>=23.2.1
 
 # Voice Agent — real-time VAD
 webrtcvad>=2.0.10
+
+# ASR codec-degradation experiment (word error rate)
+jiwer>=3.0.0

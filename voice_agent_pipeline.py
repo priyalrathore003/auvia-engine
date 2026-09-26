@@ -9,6 +9,7 @@ import enum
 import io
 import time
 import wave
+from datetime import datetime, timezone
 
 import webrtcvad
 
@@ -45,6 +46,29 @@ class TurnTaker:
         self._state = TurnState.IDLE
         self._silence_run = 0
         self._speech_run = 0
+        self._last_speech_frame_time: datetime | None = None
+
+    @property
+    def state(self) -> TurnState:
+        """Read-only: current turn state. Added for the telephony bridge's
+        barge-in detection (caller speech during TTS playback) — does not
+        change push_audio()'s behavior for existing callers."""
+        return self._state
+
+    @property
+    def is_speaking(self) -> bool:
+        return self._state == TurnState.SPEAKING
+
+    @property
+    def last_speech_frame_time(self) -> datetime | None:
+        """Read-only: wall-clock time the most recent voiced frame was
+        classified as speech. Added for latency instrumentation (an honest
+        stand-in for "the caller stopped talking" — the instant right before
+        the trailing-silence run that ends a turn). Not cleared on _reset(),
+        so it's safe to read immediately after push_audio() returns a
+        completed utterance, before any later frame overwrites it. Does not
+        change push_audio()'s behavior or return value for existing callers."""
+        return self._last_speech_frame_time
 
     def push_audio(self, chunk: bytes) -> bytes | None:
         self._buffer.extend(chunk)
@@ -61,6 +85,7 @@ class TurnTaker:
                 self._speech_run += 1
                 self._silence_run = 0
                 self._state = TurnState.SPEAKING
+                self._last_speech_frame_time = datetime.now(timezone.utc)
             elif self._state == TurnState.SPEAKING:
                 self._speech_frames.append(frame)  # keep a little trailing silence — natural cutoff
                 self._silence_run += 1
@@ -103,11 +128,21 @@ class LatencyTracker:
         self._t0 = time.monotonic()
         self._last = self._t0
         self.stages: dict[str, float] = {}
+        # Wall-clock instant of each mark, alongside the relative-ms deltas
+        # above. Purely additive: existing callers that only read .stages /
+        # .report() are unaffected. Added so a stage that fires deep inside a
+        # sync-thread-run helper (e.g. TTS first-byte, inside
+        # asyncio.to_thread) can still get a real, honest timestamp for
+        # harness event emission, reconstructed after the fact from the
+        # caller's async context rather than needing an event loop in the
+        # worker thread.
+        self.marks_wall_clock: dict[str, datetime] = {}
 
     def mark(self, stage: str) -> None:
         now = time.monotonic()
         self.stages[stage] = round((now - self._last) * 1000, 1)
         self._last = now
+        self.marks_wall_clock[stage] = datetime.now(timezone.utc)
 
     def report(self) -> dict:
         total_ms = round((self._last - self._t0) * 1000, 1)

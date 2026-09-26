@@ -13,6 +13,7 @@ hold concurrent real-time sessions.
 import asyncio
 import base64
 import logging
+from datetime import datetime, timezone
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -47,7 +48,12 @@ async def handle_voice_session(websocket: WebSocket) -> None:
             if utterance_pcm is None:
                 continue
 
-            await _process_turn(websocket, utterance_pcm)
+            # Captured immediately so the phone-vs-WS comparison (see
+            # scripts/compare_transports.py) has a real, comparable
+            # "endpointing" duration for this path too, not just the phone
+            # bridge — same TurnTaker class, same silence threshold.
+            endpoint_decision_time = datetime.now(timezone.utc)
+            await _process_turn(websocket, utterance_pcm, turn_taker.last_speech_frame_time, endpoint_decision_time)
 
     except WebSocketDisconnect:
         pass
@@ -61,7 +67,12 @@ async def handle_voice_session(websocket: WebSocket) -> None:
         logger.info("[VOICE-AGENT] session closed")
 
 
-async def _process_turn(websocket: WebSocket, utterance_pcm: bytes) -> None:
+async def _process_turn(
+    websocket: WebSocket,
+    utterance_pcm: bytes,
+    speech_end_time: "datetime | None" = None,
+    endpoint_decision_time: "datetime | None" = None,
+) -> None:
     lt = LatencyTracker()
 
     from integrations.sarvam_client import transcribe_vocal
@@ -89,6 +100,14 @@ async def _process_turn(websocket: WebSocket, utterance_pcm: bytes) -> None:
     audio_b64 = base64.b64encode(audio_bytes).decode() if audio_bytes else None
 
     latency = lt.report()
+    if speech_end_time is not None and endpoint_decision_time is not None:
+        # Additive field, not one of LatencyTracker's own stages (that timer
+        # only starts after push_audio() already returned the utterance, so
+        # it can't see this duration itself). Real measured value: the same
+        # TurnTaker/500ms-silence-threshold logic as the phone bridge.
+        latency["endpointing_ms"] = round(
+            (endpoint_decision_time - speech_end_time).total_seconds() * 1000, 1
+        )
     logger.info("[VOICE-AGENT] turn latency: %s", latency)
 
     await websocket.send_json({

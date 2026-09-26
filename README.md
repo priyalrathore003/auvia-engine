@@ -156,6 +156,12 @@ auvia-engine/
 
 ---
 
+## Docs
+
+- [Telephony bridge](docs/telephony-bridge.md) — real PSTN calls via Twilio Media Streams, a μ-law codec bug caught by exhaustive testing, an ASR-under-codec null result, and real measured phone-vs-WebSocket latency numbers.
+
+---
+
 ## What's Next
 
 - [ ] Migrate agent orchestration to **LangGraph** state machine (deterministic routing)
